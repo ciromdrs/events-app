@@ -1,0 +1,12 @@
+{% if posts %}
+    {% for p in posts %}
+        <div>
+            <div>
+            On {{p.publication_date.date}}, at {{p.publication_date.time}}:
+            </div>
+            {{p.text}}
+        </div>
+    {% endfor %}
+{% else %}
+    This is your photo feed. Latest photos will show up here.
+{% endif %}
