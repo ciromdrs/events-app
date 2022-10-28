@@ -1,29 +1,36 @@
 module Main exposing (..)
 
-
 import Browser
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
+import Http
 
 
 
 -- MAIN
 
 
+main : Program () Model Msg
 main =
-  Browser.sandbox { init = init, update = update, view = view }
+    Browser.element
+        { init = init
+        , update = update
+        , view = view
+        , subscriptions = \model -> Sub.none
+        }
 
 
 
 -- MODEL
 
 
-type alias Model = Int
+type alias Model =
+    { text : String }
 
 
-init : Model
-init =
-  0
+init : () -> ( Model, Cmd Msg )
+init flags =
+    ( { text = "Hello, Elm!" }, Cmd.none )
 
 
 
@@ -31,18 +38,28 @@ init =
 
 
 type Msg
-  = Increment
-  | Decrement
+    = ClickedLoadText
+    | GotText (Result Http.Error String)
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    Increment ->
-      model + 1
+    case msg of
+        ClickedLoadText ->
+            ( model
+            , Http.get
+                { url = "hello.php"
+                , expect = Http.expectString GotText
+                }
+            )
 
-    Decrement ->
-      model - 1
+        GotText result ->
+            case result of
+                Ok text ->
+                    ( { model | text = text }, Cmd.none )
+
+                Err err ->
+                    ( { model | text = "Error loading text" }, Cmd.none )
 
 
 
@@ -51,8 +68,7 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-  div []
-    [ button [ onClick Decrement ] [ text "-" ]
-    , div [] [ text (String.fromInt model) ]
-    , button [ onClick Increment ] [ text "+" ]
-    ]
+    div []
+        [ text model.text
+        , button [ onClick ClickedLoadText ] [ text "Load message" ]
+        ]
