@@ -11,13 +11,14 @@ services:
       MYSQL_DATABASE: wedding
     volumes:
       - mysql-data:/var/lib/mysql
-   
+      - ./db/init:/docker-entrypoint-initdb.d
+
   adminer:
     image: adminer
     restart: always
     ports:
       - 8080:8080
-  
+
   site:
     build: .
     restart: always
@@ -25,6 +26,6 @@ services:
       - 80:80
     volumes:
       - ./website:/var/www/html
-   
+
 volumes:
   mysql-data:
