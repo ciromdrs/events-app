@@ -48,7 +48,7 @@ update msg model =
         ClickedLoadText ->
             ( model
             , Http.get
-                { url = "hello.php"
+                { url = "api/hello"
                 , expect = Http.expectString GotText
                 }
             )
