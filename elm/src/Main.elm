@@ -4,6 +4,8 @@ import Browser
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
 import Http
+import Json.Decode exposing (Decoder, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (optional, required)
 
 
 
@@ -20,6 +22,13 @@ main =
         }
 
 
+init : () -> ( Model, Cmd Msg )
+init flags =
+    ( { text = "Hello from Elm!" }
+    , Cmd.none
+    )
+
+
 
 -- MODEL
 
@@ -28,14 +37,12 @@ type alias Model =
     { text : String }
 
 
-init : () -> ( Model, Cmd Msg )
-init flags =
-    ( { text = "Hello, Elm!" }
-    , Http.get
-        { url = "api/posts"
-        , expect = Http.expectString GotText
-        }
-    )
+type alias Post =
+    { id : Int
+    , user : String
+    , text : String
+    , created : String
+    }
 
 
 
@@ -44,7 +51,7 @@ init flags =
 
 type Msg
     = ClickedLoadText
-    | GotText (Result Http.Error String)
+    | GotPosts (Result Http.Error (List Post))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -53,18 +60,23 @@ update msg model =
         ClickedLoadText ->
             ( model
             , Http.get
-                { url = "api/hello"
-                , expect = Http.expectString GotText
+                { url = "api/posts"
+                , expect = Http.expectJson GotPosts (list postDecoder)
                 }
             )
 
-        GotText result ->
+        GotPosts result ->
             case result of
-                Ok text ->
-                    ( { model | text = text }, Cmd.none )
+                Ok posts ->
+                    ( { model | text = Debug.toString posts }, Cmd.none )
 
                 Err err ->
-                    ( { model | text = "Error loading text" }, Cmd.none )
+                    case err of
+                        Http.BadBody errMessage ->
+                            ( { model | text = errMessage }, Cmd.none )
+
+                        _ ->
+                            ( { model | text = "Unknown error" }, Cmd.none )
 
 
 
@@ -77,3 +89,12 @@ view model =
         [ text model.text
         , button [ onClick ClickedLoadText ] [ text "Load message" ]
         ]
+
+
+postDecoder : Decoder Post
+postDecoder =
+    succeed Post
+        |> required "id" int
+        |> required "user" string
+        |> required "text" string
+        |> required "created" string
