@@ -1,7 +1,8 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, text)
+import Html exposing (Html, button, div, main_, span, text)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode exposing (Decoder, int, list, string, succeed)
@@ -24,8 +25,14 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-    ( { text = "Hello from Elm!" }
-    , Cmd.none
+    ( { debugText = ""
+      , status = Loading
+      , posts = []
+      }
+    , Http.get
+        { url = "api/posts"
+        , expect = Http.expectJson GotPosts (list postDecoder)
+        }
     )
 
 
@@ -34,7 +41,15 @@ init flags =
 
 
 type alias Model =
-    { text : String }
+    { debugText : String
+    , status : Status
+    , posts : List Post
+    }
+
+
+type Status
+    = Loading
+    | Idle
 
 
 type alias Post =
@@ -50,33 +65,28 @@ type alias Post =
 
 
 type Msg
-    = ClickedLoadText
-    | GotPosts (Result Http.Error (List Post))
+    = GotPosts (Result Http.Error (List Post))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ClickedLoadText ->
-            ( model
-            , Http.get
-                { url = "api/posts"
-                , expect = Http.expectJson GotPosts (list postDecoder)
-                }
-            )
-
         GotPosts result ->
+            let
+                modelIdle =
+                    { model | status = Idle }
+            in
             case result of
                 Ok posts ->
-                    ( { model | text = Debug.toString posts }, Cmd.none )
+                    ( { modelIdle | posts = posts }, Cmd.none )
 
                 Err err ->
                     case err of
                         Http.BadBody errMessage ->
-                            ( { model | text = errMessage }, Cmd.none )
+                            ( { modelIdle | debugText = errMessage }, Cmd.none )
 
                         _ ->
-                            ( { model | text = "Unknown error" }, Cmd.none )
+                            ( { modelIdle | debugText = "Unknown error" }, Cmd.none )
 
 
 
@@ -85,9 +95,28 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ text model.text
-        , button [ onClick ClickedLoadText ] [ text "Load message" ]
+    main_ [ class "mdl-layout__content mdl-color--grey-100" ]
+        [ div
+            [ class "mdl-grid" ]
+            [ div []
+                ((case model.status of
+                    Loading ->
+                        [ text "Loading recent posts..." ]
+
+                    _ ->
+                        []
+                 )
+                    ++ List.map
+                        (\post ->
+                            div [ class "mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--6-col" ]
+                                [ span [ class "post-user" ] [ text post.user ]
+                                , span [ class "post-date" ] [ text (" on " ++ post.created) ]
+                                , div [] [ text post.text ]
+                                ]
+                        )
+                        model.posts
+                )
+            ]
         ]
 
 

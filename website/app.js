@@ -6206,50 +6206,94 @@ var $author$project$Main$update = F2(
 			}
 		}
 	});
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$main_ = _VirtualDom_node('main');
+var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$view = function (model) {
 	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
+		$elm$html$Html$main_,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('mdl-layout__content mdl-color--grey-100')
+			]),
 		_List_fromArray(
 			[
 				A2(
 				$elm$html$Html$div,
-				_List_Nil,
-				_Utils_ap(
-					function () {
-						var _v0 = model.status;
-						if (_v0.$ === 'Loading') {
-							return _List_fromArray(
-								[
-									$elm$html$Html$text('Loading recent posts...')
-								]);
-						} else {
-							return _List_Nil;
-						}
-					}(),
-					A2(
-						$elm$core$List$map,
-						function (post) {
-							return A2(
-								$elm$html$Html$div,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text(post.user),
-										$elm$html$Html$text(post.created),
-										A2(
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('mdl-grid')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_Utils_ap(
+							function () {
+								var _v0 = model.status;
+								if (_v0.$ === 'Loading') {
+									return _List_fromArray(
+										[
+											$elm$html$Html$text('Loading recent posts...')
+										]);
+								} else {
+									return _List_Nil;
+								}
+							}(),
+							A2(
+								$elm$core$List$map,
+								function (post) {
+									return A2(
 										$elm$html$Html$div,
-										_List_Nil,
 										_List_fromArray(
 											[
-												$elm$html$Html$text(post.text)
-											]))
-									]));
-						},
-						model.posts)))
+												$elm$html$Html$Attributes$class('mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--6-col')
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('post-user')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text(post.user)
+													])),
+												A2(
+												$elm$html$Html$span,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('post-date')
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text(' on ' + post.created)
+													])),
+												A2(
+												$elm$html$Html$div,
+												_List_Nil,
+												_List_fromArray(
+													[
+														$elm$html$Html$text(post.text)
+													]))
+											]));
+								},
+								model.posts)))
+					]))
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(
