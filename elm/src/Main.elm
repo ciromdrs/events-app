@@ -30,7 +30,12 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-    ( { text = "Hello, Elm!" }, Cmd.none )
+    ( { text = "Hello, Elm!" }
+    , Http.get
+        { url = "api/posts"
+        , expect = Http.expectString GotText
+        }
+    )
 
 
 
