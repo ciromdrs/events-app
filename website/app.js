@@ -5334,10 +5334,10 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
+var $author$project$Main$Loading = {$: 'Loading'};
 var $author$project$Main$GotPosts = function (a) {
 	return {$: 'GotPosts', a: a};
 };
-var $author$project$Main$Loading = {$: 'Loading'};
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6158,23 +6158,23 @@ var $author$project$Main$postDecoder = A3(
 				'id',
 				$elm$json$Json$Decode$int,
 				$elm$json$Json$Decode$succeed($author$project$Main$Post)))));
+var $author$project$Main$getRecentPostsCmd = $elm$http$Http$get(
+	{
+		expect: A2(
+			$elm$http$Http$expectJson,
+			$author$project$Main$GotPosts,
+			$elm$json$Json$Decode$list($author$project$Main$postDecoder)),
+		url: 'api/posts'
+	});
 var $author$project$Main$init = function (flags) {
 	return _Utils_Tuple2(
 		{
 			debugText: '',
-			postFormData: {text: '', user: ''},
+			postFormData: {text: '', user: 'default'},
 			posts: _List_Nil,
-			status: $author$project$Main$Loading,
-			user: 'default'
+			status: $author$project$Main$Loading
 		},
-		$elm$http$Http$get(
-			{
-				expect: A2(
-					$elm$http$Http$expectJson,
-					$author$project$Main$GotPosts,
-					$elm$json$Json$Decode$list($author$project$Main$postDecoder)),
-				url: 'api/posts'
-			}));
+		$author$project$Main$getRecentPostsCmd);
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
@@ -6272,25 +6272,27 @@ var $author$project$Main$update = F2(
 						}));
 			default:
 				var result = msg.a;
-				if (result.$ === 'Ok') {
-					var value = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
+				var modelLoading = _Utils_update(
+					model,
+					{status: $author$project$Main$Loading});
+				var newModel = function () {
+					if (result.$ === 'Ok') {
+						var value = result.a;
+						return _Utils_update(
+							modelLoading,
 							{
 								postFormData: {text: '', user: ''}
-							}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					var error = result.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
+							});
+					} else {
+						var error = result.a;
+						return _Utils_update(
+							modelLoading,
 							{
 								debugText: $elm$core$Debug$toString(result)
-							}),
-						$elm$core$Platform$Cmd$none);
-				}
+							});
+					}
+				}();
+				return _Utils_Tuple2(newModel, $author$project$Main$getRecentPostsCmd);
 		}
 	});
 var $elm$json$Json$Encode$string = _Json_wrap;

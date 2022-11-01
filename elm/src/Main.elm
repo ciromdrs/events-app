@@ -30,10 +30,7 @@ init flags =
       , posts = []
       , postFormData = { user = "default", text = "" }
       }
-    , Http.get
-        { url = "api/posts"
-        , expect = Http.expectJson GotPosts (list postDecoder)
-        }
+    , getRecentPostsCmd
     )
 
 
@@ -128,16 +125,27 @@ update msg model =
             )
 
         Posted result ->
-            case result of
-                Ok value ->
-                    ( { model | postFormData = { user = "", text = "" } }
-                    , Cmd.none
-                    )
+            let
+                modelLoading =
+                    { model | status = Loading }
 
-                Err error ->
-                    ( { model | debugText = Debug.toString result }
-                    , Cmd.none
-                    )
+                newModel =
+                    case result of
+                        Ok value ->
+                            { modelLoading | postFormData = { user = "", text = "" } }
+
+                        Err error ->
+                            { modelLoading | debugText = Debug.toString result }
+            in
+            ( newModel, getRecentPostsCmd )
+
+
+getRecentPostsCmd : Cmd Msg
+getRecentPostsCmd =
+    Http.get
+        { url = "api/posts"
+        , expect = Http.expectJson GotPosts (list postDecoder)
+        }
 
 
 
