@@ -1,9 +1,9 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, main_, span, text)
-import Html.Attributes exposing (class)
-import Html.Events exposing (onClick)
+import Html exposing (Html, a, button, div, form, i, input, label, li, main_, nav, span, text, textarea, ul)
+import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -28,6 +28,7 @@ init flags =
     ( { debugText = ""
       , status = Loading
       , posts = []
+      , postFormData = { user = "default", text = "" }
       }
     , Http.get
         { url = "api/posts"
@@ -44,6 +45,7 @@ type alias Model =
     { debugText : String
     , status : Status
     , posts : List Post
+    , postFormData : { user : String, text : String }
     }
 
 
@@ -66,6 +68,10 @@ type alias Post =
 
 type Msg
     = GotPosts (Result Http.Error (List Post))
+    | ClickedPost
+    | Posted (Result Http.Error String)
+    | ChangedPostText String
+    | ChangedPostUser String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -88,6 +94,51 @@ update msg model =
                         _ ->
                             ( { modelIdle | debugText = "Unknown error" }, Cmd.none )
 
+        ChangedPostUser new ->
+            let
+                formData =
+                    model.postFormData
+
+                newData =
+                    { formData | user = new }
+            in
+            ( { model | postFormData = newData }, Cmd.none )
+
+        ChangedPostText new ->
+            let
+                formData =
+                    model.postFormData
+
+                newData =
+                    { formData | text = new }
+            in
+            ( { model | postFormData = newData }, Cmd.none )
+
+        ClickedPost ->
+            ( model
+            , Http.post
+                { url = "api/posts"
+                , body =
+                    Http.multipartBody
+                        [ Http.stringPart "username" model.postFormData.user
+                        , Http.stringPart "text" model.postFormData.text
+                        ]
+                , expect = Http.expectString Posted
+                }
+            )
+
+        Posted result ->
+            case result of
+                Ok value ->
+                    ( { model | postFormData = { user = "", text = "" } }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model | debugText = Debug.toString result }
+                    , Cmd.none
+                    )
+
 
 
 -- VIEW
@@ -95,28 +146,69 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    main_ [ class "mdl-layout__content mdl-color--grey-100" ]
-        [ div
-            [ class "mdl-grid" ]
-            [ div []
+    div []
+        [ div [] [ span [] [ text model.debugText ] ]
+        , main_ [ class "main-content" ]
+            [ viewPostForm model
+            , div
+                []
                 ((case model.status of
                     Loading ->
-                        [ text "Loading recent posts..." ]
+                        [ div [] [ text "Loading recent posts..." ] ]
 
                     _ ->
                         []
                  )
                     ++ List.map
                         (\post ->
-                            div [ class "mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--6-col" ]
+                            div [ class "post" ]
                                 [ span [ class "post-user" ] [ text post.user ]
                                 , span [ class "post-date" ] [ text (" on " ++ post.created) ]
-                                , div [] [ text post.text ]
+                                , div [ class "post-text" ] [ text post.text ]
                                 ]
                         )
                         model.posts
                 )
             ]
+        ]
+
+
+viewPostForm : Model -> Html Msg
+viewPostForm model =
+    let
+        emptyDiv =
+            div [] []
+    in
+    div [ class "post" ]
+        [ div
+            []
+            [ input
+                [ type_ "text"
+                , id "username"
+                , name "username"
+                , onInput ChangedPostUser
+                , placeholder "User"
+                , value model.postFormData.user
+                , Html.Attributes.required True
+                ]
+                []
+            ]
+        , emptyDiv
+        , div []
+            [ textarea
+                [ id "text"
+                , class "post-text-input"
+                , rows 3
+                , onInput ChangedPostText
+                , placeholder "Write something..."
+                , value model.postFormData.text
+                ]
+                []
+            ]
+        , emptyDiv
+        , button
+            [ onClick ClickedPost ]
+            [ text "Post" ]
         ]
 
 

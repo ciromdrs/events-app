@@ -6160,7 +6160,13 @@ var $author$project$Main$postDecoder = A3(
 				$elm$json$Json$Decode$succeed($author$project$Main$Post)))));
 var $author$project$Main$init = function (flags) {
 	return _Utils_Tuple2(
-		{debugText: '', posts: _List_Nil, status: $author$project$Main$Loading},
+		{
+			debugText: '',
+			postFormData: {text: '', user: ''},
+			posts: _List_Nil,
+			status: $author$project$Main$Loading,
+			user: 'default'
+		},
 		$elm$http$Http$get(
 			{
 				expect: A2(
@@ -6173,37 +6179,118 @@ var $author$project$Main$init = function (flags) {
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$Idle = {$: 'Idle'};
+var $author$project$Main$Posted = function (a) {
+	return {$: 'Posted', a: a};
+};
+var $elm$http$Http$expectString = function (toMsg) {
+	return A2(
+		$elm$http$Http$expectStringResponse,
+		toMsg,
+		$elm$http$Http$resolve($elm$core$Result$Ok));
+};
+var $elm$http$Http$multipartBody = function (parts) {
+	return A2(
+		_Http_pair,
+		'',
+		_Http_toFormData(parts));
+};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$http$Http$post = function (r) {
+	return $elm$http$Http$request(
+		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
+};
+var $elm$http$Http$stringPart = _Http_pair;
+var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Main$update = F2(
 	function (msg, model) {
-		var result = msg.a;
-		var modelIdle = _Utils_update(
-			model,
-			{status: $author$project$Main$Idle});
-		if (result.$ === 'Ok') {
-			var posts = result.a;
-			return _Utils_Tuple2(
-				_Utils_update(
-					modelIdle,
-					{posts: posts}),
-				$elm$core$Platform$Cmd$none);
-		} else {
-			var err = result.a;
-			if (err.$ === 'BadBody') {
-				var errMessage = err.a;
+		switch (msg.$) {
+			case 'GotPosts':
+				var result = msg.a;
+				var modelIdle = _Utils_update(
+					model,
+					{status: $author$project$Main$Idle});
+				if (result.$ === 'Ok') {
+					var posts = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							modelIdle,
+							{posts: posts}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var err = result.a;
+					if (err.$ === 'BadBody') {
+						var errMessage = err.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								modelIdle,
+								{debugText: errMessage}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(
+							_Utils_update(
+								modelIdle,
+								{debugText: 'Unknown error'}),
+							$elm$core$Platform$Cmd$none);
+					}
+				}
+			case 'ChangedPostUser':
+				var _new = msg.a;
+				var formData = model.postFormData;
+				var newData = _Utils_update(
+					formData,
+					{user: _new});
 				return _Utils_Tuple2(
 					_Utils_update(
-						modelIdle,
-						{debugText: errMessage}),
+						model,
+						{postFormData: newData}),
 					$elm$core$Platform$Cmd$none);
-			} else {
+			case 'ChangedPostText':
+				var _new = msg.a;
+				var formData = model.postFormData;
+				var newData = _Utils_update(
+					formData,
+					{text: _new});
 				return _Utils_Tuple2(
 					_Utils_update(
-						modelIdle,
-						{debugText: 'Unknown error'}),
+						model,
+						{postFormData: newData}),
 					$elm$core$Platform$Cmd$none);
-			}
+			case 'ClickedPost':
+				return _Utils_Tuple2(
+					model,
+					$elm$http$Http$post(
+						{
+							body: $elm$http$Http$multipartBody(
+								_List_fromArray(
+									[
+										A2($elm$http$Http$stringPart, 'username', model.postFormData.user),
+										A2($elm$http$Http$stringPart, 'text', model.postFormData.text)
+									])),
+							expect: $elm$http$Http$expectString($author$project$Main$Posted),
+							url: 'api/posts'
+						}));
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var value = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								postFormData: {text: '', user: ''}
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var error = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								debugText: $elm$core$Debug$toString(result)
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $elm$json$Json$Encode$string = _Json_wrap;
@@ -6220,23 +6307,173 @@ var $elm$html$Html$main_ = _VirtualDom_node('main');
 var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$view = function (model) {
+var $author$project$Main$ChangedPostText = function (a) {
+	return {$: 'ChangedPostText', a: a};
+};
+var $author$project$Main$ChangedPostUser = function (a) {
+	return {$: 'ChangedPostUser', a: a};
+};
+var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
 	return A2(
-		$elm$html$Html$main_,
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$required = $elm$html$Html$Attributes$boolProperty('required');
+var $elm$html$Html$Attributes$rows = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'rows',
+		$elm$core$String$fromInt(n));
+};
+var $elm$html$Html$textarea = _VirtualDom_node('textarea');
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Main$viewPostForm = function (model) {
+	var emptyDiv = A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	return A2(
+		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('mdl-layout__content mdl-color--grey-100')
+				$elm$html$Html$Attributes$class('post')
 			]),
 		_List_fromArray(
 			[
 				A2(
 				$elm$html$Html$div,
+				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class('mdl-grid')
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$id('username'),
+								$elm$html$Html$Attributes$name('username'),
+								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostUser),
+								$elm$html$Html$Attributes$placeholder('User'),
+								$elm$html$Html$Attributes$value(model.postFormData.user),
+								$elm$html$Html$Attributes$required(true)
+							]),
+						_List_Nil)
+					])),
+				emptyDiv,
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$textarea,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('text'),
+								$elm$html$Html$Attributes$class('post-text-input'),
+								$elm$html$Html$Attributes$rows(3),
+								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostText),
+								$elm$html$Html$Attributes$placeholder('Write something...'),
+								$elm$html$Html$Attributes$value(model.postFormData.text)
+							]),
+						_List_Nil)
+					])),
+				emptyDiv,
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$ClickedPost)
 					]),
 				_List_fromArray(
 					[
+						$elm$html$Html$text('Post')
+					]))
+			]));
+};
+var $author$project$Main$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$span,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text(model.debugText)
+							]))
+					])),
+				A2(
+				$elm$html$Html$main_,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('main-content')
+					]),
+				_List_fromArray(
+					[
+						$author$project$Main$viewPostForm(model),
 						A2(
 						$elm$html$Html$div,
 						_List_Nil,
@@ -6246,7 +6483,13 @@ var $author$project$Main$view = function (model) {
 								if (_v0.$ === 'Loading') {
 									return _List_fromArray(
 										[
-											$elm$html$Html$text('Loading recent posts...')
+											A2(
+											$elm$html$Html$div,
+											_List_Nil,
+											_List_fromArray(
+												[
+													$elm$html$Html$text('Loading recent posts...')
+												]))
 										]);
 								} else {
 									return _List_Nil;
@@ -6259,7 +6502,7 @@ var $author$project$Main$view = function (model) {
 										$elm$html$Html$div,
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$class('mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--6-col')
+												$elm$html$Html$Attributes$class('post')
 											]),
 										_List_fromArray(
 											[
@@ -6285,7 +6528,10 @@ var $author$project$Main$view = function (model) {
 													])),
 												A2(
 												$elm$html$Html$div,
-												_List_Nil,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$class('post-text')
+													]),
 												_List_fromArray(
 													[
 														$elm$html$Html$text(post.text)
