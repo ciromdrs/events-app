@@ -3,7 +3,7 @@ $dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=wedding', 'root', 'exam
 $response = "";
 switch ($_SERVER['REQUEST_METHOD']) {
     case "GET":
-        $sth = $dbh->prepare('SELECT * FROM posts;');
+        $sth = $dbh->prepare('SELECT * FROM posts ORDER BY created DESC LIMIT 10;');
         $sth->execute();
         $response = json_encode($sth->fetchAll());
         break;
