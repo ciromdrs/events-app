@@ -1,5 +1,5 @@
 <?php
-$dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=wedding', 'root', 'example');
+$dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=eventsapp', 'root', 'example');
 $response = "";
 switch ($_SERVER['REQUEST_METHOD']) {
     case "GET":
