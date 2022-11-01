@@ -132,7 +132,14 @@ update msg model =
                 newModel =
                     case result of
                         Ok value ->
-                            { modelLoading | postFormData = { user = "", text = "" } }
+                            let
+                                oldFormData =
+                                    modelLoading.postFormData
+
+                                clearText =
+                                    { oldFormData | text = "" }
+                            in
+                            { modelLoading | postFormData = clearText }
 
                         Err error ->
                             { modelLoading | debugText = Debug.toString result }

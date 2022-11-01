@@ -6278,11 +6278,13 @@ var $author$project$Main$update = F2(
 				var newModel = function () {
 					if (result.$ === 'Ok') {
 						var value = result.a;
+						var oldFormData = modelLoading.postFormData;
+						var clearText = _Utils_update(
+							oldFormData,
+							{text: ''});
 						return _Utils_update(
 							modelLoading,
-							{
-								postFormData: {text: '', user: ''}
-							});
+							{postFormData: clearText});
 					} else {
 						var error = result.a;
 						return _Utils_update(
