@@ -25,7 +25,8 @@ services:
     ports:
       - 80:80
     volumes:
-      - ./website:/var/www/html
+      - ./php/website:/var/www/html
+      - ./php/tests:/var/www/tests
 
 volumes:
   mysql-data:
