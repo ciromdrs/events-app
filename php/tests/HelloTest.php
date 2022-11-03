@@ -8,7 +8,7 @@ final class HelloTest extends TestCase
         // Initialize Guzzle client
         $client = new GuzzleHttp\Client();
 
-        // Create a POST request
+        // Create a GET request
         $response = $client->request('GET', 'elm-photo-gallery-site-1/api/hello');
 
         // Parse the response object, e.g. read the headers, body, etc.
