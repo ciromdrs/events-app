@@ -9,6 +9,13 @@ final class PostsTest extends RESTTestCase {
     }
 
 
+    static function setUpBeforeClass(): void {
+        $dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=eventsapp', 'root', 'example');
+        $qry = 'DELETE FROM posts;';
+        $sth = $dbh->prepare($qry);
+        $sth->execute();
+    }
+
     function testStartsEmpty(): void {
         $response = $this->client->get('posts');
         $got = (string) $response->getBody();
