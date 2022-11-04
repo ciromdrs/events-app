@@ -3,7 +3,11 @@ $dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=eventsapp', 'root', 'ex
 $response = "";
 switch ($_SERVER['REQUEST_METHOD']) {
     case "GET":
-        $response = findAll($dbh);
+        if (isset($id)) {
+            $response = find($dbh, $id);
+        } else {
+            $response = findAll($dbh);
+        }
         break;
 
     case "POST":
@@ -24,4 +28,12 @@ function findAll($connection) {
     $sth = $connection->prepare('SELECT * FROM posts ORDER BY created DESC LIMIT 10;');
     $sth->execute();
     return json_encode($sth->fetchAll());
+}
+
+
+function find($connection, $id) {
+    $sth = $connection->prepare('SELECT * FROM posts WHERE id=:id;');
+    $sth->execute(['id' => $id]);
+    $data = $sth->fetch($mode=PDO::FETCH_ASSOC);
+    return json_encode($data);
 }

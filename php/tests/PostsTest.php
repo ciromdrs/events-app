@@ -52,4 +52,16 @@ final class PostsTest extends RESTTestCase {
         return $matches['id'];
     }
 
+    /**
+     * @depends testLocationHeader
+     */
+    function testInsertedData($id) {
+        $response = $this->client->get('posts/'.$id);
+        $body = (string) $response->getBody();
+        $got = json_decode($body, $associative = true);
+        $this->assertEquals($id, $got['id']);
+        $this->assertEquals('user1', $got['user']);
+        $this->assertEquals('Hello!', $got['text']);
+        $this->assertNotEmpty($got['created']);
+    }
 }
