@@ -12,6 +12,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $qry = 'INSERT INTO posts (user, text) VALUES (:user, :text);';
         $sth = $dbh->prepare($qry);
         $sth->execute(['user' => $username, 'text' => $text]);
+        $lastId = $dbh->lastInsertId();
+        http_response_code(201);
+        header("Location: posts/$lastId");
         break;
 }
 print_r($response);

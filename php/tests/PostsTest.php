@@ -16,9 +16,40 @@ final class PostsTest extends RESTTestCase {
         $sth->execute();
     }
 
+
     function testStartsEmpty(): void {
         $response = $this->client->get('posts');
         $got = (string) $response->getBody();
         $this->assertEquals('[]', $got);
     }
+
+
+    /**
+     * @depends testStartsEmpty
+     */
+    function testInsertStatusCreated() {
+        $username = 'user1';
+        $text = 'Hello!';
+        $response = $this->client->post('posts', [
+            'form_params' => [
+                'username' => $username,
+                'text' => $text
+            ]]);
+        $got = $response->getStatusCode();
+        $this->assertEquals(201, $got);
+        return $response;
+    }
+
+
+    /**
+     * @depends testInsertStatusCreated
+     */
+    function testLocationHeader($response) {
+        $location = $response->getHeader('Location')[0];
+        $regex = '/posts\/(?P<id>\d+)/';
+        $this->assertMatchesRegularExpression($regex, $location);
+        preg_match($regex, $location, $matches);
+        return $matches['id'];
+    }
+
 }
