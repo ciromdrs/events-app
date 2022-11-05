@@ -5,7 +5,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Main exposing (Msg, Post, viewPost)
 import Test exposing (..)
 import Test.Html.Query as Query
-import Test.Html.Selector exposing (text)
+import Test.Html.Selector exposing (class, tag, text)
 
 
 testViewPost : Test
@@ -19,10 +19,9 @@ testViewPost =
             }
     in
     describe "Renders a Post"
-        [ testRenderPostField "id field" post [ text "1" ]
-        , testRenderPostField "user field" post [ text "user1" ]
-        , testRenderPostField "text field" post [ text "some text..." ]
-        , testRenderPostField "created field" post [ text "2022-11-04 23:53:22" ]
+        [ testRenderPostField "user field" post [ tag "div", class "post-user", text "user1" ]
+        , testRenderPostField "text field" post [ tag "div", class "post-text", text "some text..." ]
+        , testRenderPostField "created field" post [ tag "span", class "post-date", text "2022-11-04 23:53:22" ]
         ]
 
 
