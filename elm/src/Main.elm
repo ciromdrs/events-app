@@ -174,17 +174,18 @@ view model =
                     _ ->
                         []
                  )
-                    ++ List.map
-                        (\post ->
-                            div [ class "post" ]
-                                [ span [ class "post-user" ] [ text post.user ]
-                                , span [ class "post-date" ] [ text (" on " ++ post.created) ]
-                                , div [ class "post-text" ] [ text post.text ]
-                                ]
-                        )
-                        model.posts
+                    ++ List.map viewPost model.posts
                 )
             ]
+        ]
+
+
+viewPost : Post -> Html Msg
+viewPost post =
+    div [ class "post" ]
+        [ span [ class "post-user" ] [ text post.user ]
+        , span [ class "post-date" ] [ text (" on " ++ post.created) ]
+        , div [ class "post-text" ] [ text post.text ]
         ]
 
 
