@@ -1,8 +1,11 @@
 <?php
-$dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=eventsapp', 'root', 'example');
+
+require_once('db.php');
+
 $response = "";
 switch ($_SERVER['REQUEST_METHOD']) {
     case "GET":
+        $dbh = DB::getInstance();
         if (isset($id)) {
             $response = find($dbh, $id);
         } else {
@@ -14,6 +17,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $username = $_POST["username"];
         $text = $_POST["text"];
         $qry = 'INSERT INTO posts (user, text) VALUES (:user, :text);';
+        $dbh = DB::getInstance();
         $sth = $dbh->prepare($qry);
         $sth->execute(['user' => $username, 'text' => $text]);
         $lastId = $dbh->lastInsertId();
