@@ -12,3 +12,13 @@ CREATE TABLE `posts` (
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+DROP TABLE IF EXISTS `likes`;
+CREATE TABLE `likes` (
+  `user` varchar(100) NOT NULL,
+  `post` int unsigned NOT NULL,
+  KEY `post` (`post`),
+  CONSTRAINT `likes_ibfk_1` FOREIGN KEY (`post`) REFERENCES `posts` (`id`),
+  PRIMARY KEY (`user`, `post`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
