@@ -39,3 +39,8 @@ button {
     text-transform: uppercase;
     font-weight: bold;
 }
+
+.like-button {
+    margin: 5px;
+    width: 25px;
+}

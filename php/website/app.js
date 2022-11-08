@@ -4545,6 +4545,23 @@ function _Http_track(router, xhr, tracker)
 			size: event.lengthComputable ? $elm$core$Maybe$Just(event.total) : $elm$core$Maybe$Nothing
 		}))));
 	});
+}
+
+function _Url_percentEncode(string)
+{
+	return encodeURIComponent(string);
+}
+
+function _Url_percentDecode(string)
+{
+	try
+	{
+		return $elm$core$Maybe$Just(decodeURIComponent(string));
+	}
+	catch (e)
+	{
+		return $elm$core$Maybe$Nothing;
+	}
 }var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
@@ -5338,6 +5355,47 @@ var $author$project$Main$Loading = {$: 'Loading'};
 var $author$project$Main$GotPosts = function (a) {
 	return {$: 'GotPosts', a: a};
 };
+var $elm$url$Url$Builder$Relative = {$: 'Relative'};
+var $elm$url$Url$Builder$rootToPrePath = function (root) {
+	switch (root.$) {
+		case 'Absolute':
+			return '/';
+		case 'Relative':
+			return '';
+		default:
+			var prePath = root.a;
+			return prePath + '/';
+	}
+};
+var $elm$url$Url$Builder$toQueryPair = function (_v0) {
+	var key = _v0.a;
+	var value = _v0.b;
+	return key + ('=' + value);
+};
+var $elm$url$Url$Builder$toQuery = function (parameters) {
+	if (!parameters.b) {
+		return '';
+	} else {
+		return '?' + A2(
+			$elm$core$String$join,
+			'&',
+			A2($elm$core$List$map, $elm$url$Url$Builder$toQueryPair, parameters));
+	}
+};
+var $elm$url$Url$Builder$custom = F4(
+	function (root, pathSegments, parameters, maybeFragment) {
+		var fragmentless = _Utils_ap(
+			$elm$url$Url$Builder$rootToPrePath(root),
+			_Utils_ap(
+				A2($elm$core$String$join, '/', pathSegments),
+				$elm$url$Url$Builder$toQuery(parameters)));
+		if (maybeFragment.$ === 'Nothing') {
+			return fragmentless;
+		} else {
+			var fragment = maybeFragment.a;
+			return fragmentless + ('#' + fragment);
+		}
+	});
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6126,10 +6184,11 @@ var $elm$http$Http$get = function (r) {
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Main$Post = F4(
-	function (id, user, text, created) {
-		return {created: created, id: id, text: text, user: user};
+var $author$project$Main$Post = F5(
+	function (id, user, text, created, likedByCurrentUser) {
+		return {created: created, id: id, likedByCurrentUser: likedByCurrentUser, text: text, user: user};
 	});
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $elm$json$Json$Decode$field = _Json_decodeField;
@@ -6143,42 +6202,73 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Main$postDecoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'created',
-	$elm$json$Json$Decode$string,
+	'liked_by_current_user',
+	$elm$json$Json$Decode$bool,
 	A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'text',
+		'created',
 		$elm$json$Json$Decode$string,
 		A3(
 			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'user',
+			'text',
 			$elm$json$Json$Decode$string,
 			A3(
 				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'id',
-				$elm$json$Json$Decode$int,
-				$elm$json$Json$Decode$succeed($author$project$Main$Post)))));
-var $author$project$Main$getRecentPostsCmd = $elm$http$Http$get(
-	{
-		expect: A2(
-			$elm$http$Http$expectJson,
-			$author$project$Main$GotPosts,
-			$elm$json$Json$Decode$list($author$project$Main$postDecoder)),
-		url: 'api/posts'
+				'user',
+				$elm$json$Json$Decode$string,
+				A3(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'id',
+					$elm$json$Json$Decode$int,
+					$elm$json$Json$Decode$succeed($author$project$Main$Post))))));
+var $elm$url$Url$Builder$QueryParameter = F2(
+	function (a, b) {
+		return {$: 'QueryParameter', a: a, b: b};
 	});
-var $author$project$Main$init = function (flags) {
-	return _Utils_Tuple2(
+var $elm$url$Url$percentEncode = _Url_percentEncode;
+var $elm$url$Url$Builder$string = F2(
+	function (key, value) {
+		return A2(
+			$elm$url$Url$Builder$QueryParameter,
+			$elm$url$Url$percentEncode(key),
+			$elm$url$Url$percentEncode(value));
+	});
+var $author$project$Main$getRecentPostsCmd = function (model) {
+	return $elm$http$Http$get(
 		{
-			debugText: '',
-			postFormData: {text: '', user: 'default'},
-			posts: _List_Nil,
-			status: $author$project$Main$Loading
-		},
-		$author$project$Main$getRecentPostsCmd);
+			expect: A2(
+				$elm$http$Http$expectJson,
+				$author$project$Main$GotPosts,
+				$elm$json$Json$Decode$list($author$project$Main$postDecoder)),
+			url: A4(
+				$elm$url$Url$Builder$custom,
+				$elm$url$Url$Builder$Relative,
+				_List_fromArray(
+					['api', 'posts']),
+				_List_fromArray(
+					[
+						A2($elm$url$Url$Builder$string, 'current_user', model.postFormData.user)
+					]),
+				$elm$core$Maybe$Nothing)
+		});
+};
+var $author$project$Main$init = function (flags) {
+	var model = {
+		debugText: '',
+		postFormData: {text: '', user: 'default'},
+		posts: _List_Nil,
+		status: $author$project$Main$Loading
+	};
+	return _Utils_Tuple2(
+		model,
+		$author$project$Main$getRecentPostsCmd(model));
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$Idle = {$: 'Idle'};
+var $author$project$Main$Liked = function (a) {
+	return {$: 'Liked', a: a};
+};
 var $author$project$Main$Posted = function (a) {
 	return {$: 'Posted', a: a};
 };
@@ -6264,13 +6354,13 @@ var $author$project$Main$update = F2(
 							body: $elm$http$Http$multipartBody(
 								_List_fromArray(
 									[
-										A2($elm$http$Http$stringPart, 'username', model.postFormData.user),
+										A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
 										A2($elm$http$Http$stringPart, 'text', model.postFormData.text)
 									])),
 							expect: $elm$http$Http$expectString($author$project$Main$Posted),
 							url: 'api/posts'
 						}));
-			default:
+			case 'Posted':
 				var result = msg.a;
 				var modelLoading = _Utils_update(
 					model,
@@ -6294,7 +6384,43 @@ var $author$project$Main$update = F2(
 							});
 					}
 				}();
-				return _Utils_Tuple2(newModel, $author$project$Main$getRecentPostsCmd);
+				return _Utils_Tuple2(
+					newModel,
+					$author$project$Main$getRecentPostsCmd(newModel));
+			case 'ClickedLike':
+				var post = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$elm$http$Http$post(
+						{
+							body: $elm$http$Http$multipartBody(
+								_List_fromArray(
+									[
+										A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
+										A2(
+										$elm$http$Http$stringPart,
+										'post',
+										$elm$core$String$fromInt(post.id))
+									])),
+							expect: $elm$http$Http$expectString($author$project$Main$Liked),
+							url: 'api/likes'
+						}));
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return _Utils_Tuple2(
+						model,
+						$author$project$Main$getRecentPostsCmd(model));
+				} else {
+					var errMessage = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								debugText: $elm$core$Debug$toString(errMessage)
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $elm$json$Json$Encode$string = _Json_wrap;
@@ -6311,17 +6437,10 @@ var $elm$html$Html$main_ = _VirtualDom_node('main');
 var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$ChangedPostText = function (a) {
-	return {$: 'ChangedPostText', a: a};
+var $author$project$Main$ClickedLike = function (a) {
+	return {$: 'ClickedLike', a: a};
 };
-var $author$project$Main$ChangedPostUser = function (a) {
-	return {$: 'ChangedPostUser', a: a};
-};
-var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
-var $elm$html$Html$input = _VirtualDom_node('input');
-var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
+var $elm$html$Html$img = _VirtualDom_node('img');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -6339,6 +6458,75 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$Attributes$src = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'src',
+		_VirtualDom_noJavaScriptOrHtmlUri(url));
+};
+var $author$project$Main$viewPost = function (post) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('post')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('post-user')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(post.user)
+					])),
+				A2(
+				$elm$html$Html$span,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('post-date')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(' on ' + post.created)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('post-text')
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(post.text)
+					])),
+				A2(
+				$elm$html$Html$img,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('like-button'),
+						$elm$html$Html$Attributes$src(
+						post.likedByCurrentUser ? '/static/filled-heart.png' : '/static/empty-heart.png'),
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$ClickedLike(post))
+					]),
+				_List_Nil)
+			]));
+};
+var $author$project$Main$ChangedPostText = function (a) {
+	return {$: 'ChangedPostText', a: a};
+};
+var $author$project$Main$ChangedPostUser = function (a) {
+	return {$: 'ChangedPostUser', a: a};
+};
+var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
@@ -6409,8 +6597,8 @@ var $author$project$Main$viewPostForm = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$id('username'),
-								$elm$html$Html$Attributes$name('username'),
+								$elm$html$Html$Attributes$id('user'),
+								$elm$html$Html$Attributes$name('user'),
 								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostUser),
 								$elm$html$Html$Attributes$placeholder('User'),
 								$elm$html$Html$Attributes$value(model.postFormData.user),
@@ -6499,50 +6687,7 @@ var $author$project$Main$view = function (model) {
 									return _List_Nil;
 								}
 							}(),
-							A2(
-								$elm$core$List$map,
-								function (post) {
-									return A2(
-										$elm$html$Html$div,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$class('post')
-											]),
-										_List_fromArray(
-											[
-												A2(
-												$elm$html$Html$span,
-												_List_fromArray(
-													[
-														$elm$html$Html$Attributes$class('post-user')
-													]),
-												_List_fromArray(
-													[
-														$elm$html$Html$text(post.user)
-													])),
-												A2(
-												$elm$html$Html$span,
-												_List_fromArray(
-													[
-														$elm$html$Html$Attributes$class('post-date')
-													]),
-												_List_fromArray(
-													[
-														$elm$html$Html$text(' on ' + post.created)
-													])),
-												A2(
-												$elm$html$Html$div,
-												_List_fromArray(
-													[
-														$elm$html$Html$Attributes$class('post-text')
-													]),
-												_List_fromArray(
-													[
-														$elm$html$Html$text(post.text)
-													]))
-											]));
-								},
-								model.posts)))
+							A2($elm$core$List$map, $author$project$Main$viewPost, model.posts)))
 					]))
 			]));
 };

@@ -1,12 +1,13 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, a, button, div, form, i, input, label, li, main_, nav, span, text, textarea, ul)
-import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, type_, value)
+import Html exposing (Html, a, button, div, form, i, img, input, label, li, main_, nav, span, text, textarea, ul)
+import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
-import Json.Decode exposing (Decoder, int, list, string, succeed)
+import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
+import Url.Builder exposing (Root(..), custom)
 
 
 
@@ -25,12 +26,16 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-    ( { debugText = ""
-      , status = Loading
-      , posts = []
-      , postFormData = { user = "default", text = "" }
-      }
-    , getRecentPostsCmd
+    let
+        model =
+            { debugText = ""
+            , status = Loading
+            , posts = []
+            , postFormData = { user = "default", text = "" }
+            }
+    in
+    ( model
+    , getRecentPostsCmd model
     )
 
 
@@ -56,6 +61,7 @@ type alias Post =
     , user : String
     , text : String
     , created : String
+    , likedByCurrentUser : Bool
     }
 
 
@@ -69,6 +75,8 @@ type Msg
     | Posted (Result Http.Error String)
     | ChangedPostText String
     | ChangedPostUser String
+    | ClickedLike Post
+    | Liked (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -117,7 +125,7 @@ update msg model =
                 { url = "api/posts"
                 , body =
                     Http.multipartBody
-                        [ Http.stringPart "username" model.postFormData.user
+                        [ Http.stringPart "user" model.postFormData.user
                         , Http.stringPart "text" model.postFormData.text
                         ]
                 , expect = Http.expectString Posted
@@ -144,13 +152,38 @@ update msg model =
                         Err error ->
                             { modelLoading | debugText = Debug.toString result }
             in
-            ( newModel, getRecentPostsCmd )
+            ( newModel, getRecentPostsCmd newModel )
+
+        ClickedLike post ->
+            ( model
+            , Http.post
+                { url = "api/likes"
+                , body =
+                    Http.multipartBody
+                        [ Http.stringPart "user" model.postFormData.user
+                        , Http.stringPart "post" (String.fromInt post.id)
+                        ]
+                , expect = Http.expectString Liked
+                }
+            )
+
+        Liked result ->
+            case result of
+                Ok _ ->
+                    ( model, getRecentPostsCmd model )
+
+                Err errMessage ->
+                    ( { model | debugText = Debug.toString errMessage }, Cmd.none )
 
 
-getRecentPostsCmd : Cmd Msg
-getRecentPostsCmd =
+getRecentPostsCmd : Model -> Cmd Msg
+getRecentPostsCmd model =
     Http.get
-        { url = "api/posts"
+        { url =
+            custom Relative
+                [ "api", "posts" ]
+                [ Url.Builder.string "current_user" model.postFormData.user ]
+                Nothing
         , expect = Http.expectJson GotPosts (list postDecoder)
         }
 
@@ -186,6 +219,18 @@ viewPost post =
         [ span [ class "post-user" ] [ text post.user ]
         , span [ class "post-date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]
+        , img
+            [ class "like-button"
+            , src
+                (if post.likedByCurrentUser then
+                    "/static/filled-heart.png"
+
+                 else
+                    "/static/empty-heart.png"
+                )
+            , onClick (ClickedLike post)
+            ]
+            []
         ]
 
 
@@ -200,8 +245,8 @@ viewPostForm model =
             []
             [ input
                 [ type_ "text"
-                , id "username"
-                , name "username"
+                , id "user"
+                , name "user"
                 , onInput ChangedPostUser
                 , placeholder "User"
                 , value model.postFormData.user
@@ -235,3 +280,4 @@ postDecoder =
         |> required "user" string
         |> required "text" string
         |> required "created" string
+        |> required "liked_by_current_user" bool
