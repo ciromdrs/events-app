@@ -40,7 +40,15 @@ button {
     font-weight: bold;
 }
 
-.like-button {
+.like-button, .dislike-button {
     margin: 5px;
     width: 25px;
+}
+
+.like-button {
+    content: url('static/empty-heart.png');
+}
+
+.dislike-button {
+    content: url('static/filled-heart.png');
 }

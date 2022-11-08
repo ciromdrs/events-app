@@ -6485,12 +6485,6 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
-var $elm$html$Html$Attributes$src = function (url) {
-	return A2(
-		$elm$html$Html$Attributes$stringProperty,
-		'src',
-		_VirtualDom_noJavaScriptOrHtmlUri(url));
-};
 var $author$project$Main$viewPost = function (post) {
 	return A2(
 		$elm$html$Html$div,
@@ -6534,9 +6528,8 @@ var $author$project$Main$viewPost = function (post) {
 				$elm$html$Html$img,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class('like-button'),
-						$elm$html$Html$Attributes$src(
-						post.likedByCurrentUser ? '/static/filled-heart.png' : '/static/empty-heart.png'),
+						$elm$html$Html$Attributes$class(
+						post.likedByCurrentUser ? 'like-button' : 'dislike-button'),
 						post.likedByCurrentUser ? $elm$html$Html$Events$onClick(
 						$author$project$Main$ClickedDislike(post)) : $elm$html$Html$Events$onClick(
 						$author$project$Main$ClickedLike(post))

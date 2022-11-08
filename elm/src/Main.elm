@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, a, button, div, form, i, img, input, label, li, main_, nav, span, text, textarea, ul)
-import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, src, type_, value)
+import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
@@ -238,13 +238,12 @@ viewPost post =
         , span [ class "post-date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]
         , img
-            [ class "like-button"
-            , src
+            [ class
                 (if post.likedByCurrentUser then
-                    "/static/filled-heart.png"
+                    "like-button"
 
                  else
-                    "/static/empty-heart.png"
+                    "dislike-button"
                 )
             , if post.likedByCurrentUser then
                 onClick (ClickedDislike post)
