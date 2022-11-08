@@ -104,6 +104,37 @@ final class PostsTest extends RESTTestCase {
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(true, $got['liked_by_current_user']);
+        return $post_id;
+    }
+
+    /**
+     * @depends testLikedPostData
+     */
+    function testDislikeStatusOk($post_id) {
+        $response = $this->client->delete(
+            'likes',
+            ['query' => ['user' => 'user1', 'post' => $post_id]]
+        );
+        $got = $response->getStatusCode();
+        $this->assertEquals(200, $got);
+        return $post_id;
+    }
+
+    /**
+     * @depends testDislikeStatusOk
+     */
+    function testDislikedPostData($post_id) {
+        $response = $this->client->get(
+            'posts/'.$post_id,
+            ['query' => ['current_user' => 'user1']]
+        );
+        $body = (string) $response->getBody();
+        $got = json_decode($body, $associative = true);
+        $this->assertEquals($post_id, $got['id']);
+        $this->assertEquals('user1', $got['user']);
+        $this->assertEquals('Hello!', $got['text']);
+        $this->assertNotEmpty($got['created']);
+        $this->assertEquals(false, $got['liked_by_current_user']);
     }
 
 }

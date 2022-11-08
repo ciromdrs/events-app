@@ -6266,8 +6266,8 @@ var $author$project$Main$init = function (flags) {
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$Main$Idle = {$: 'Idle'};
-var $author$project$Main$Liked = function (a) {
-	return {$: 'Liked', a: a};
+var $author$project$Main$LikedDisliked = function (a) {
+	return {$: 'LikedDisliked', a: a};
 };
 var $author$project$Main$Posted = function (a) {
 	return {$: 'Posted', a: a};
@@ -6402,8 +6402,35 @@ var $author$project$Main$update = F2(
 										'post',
 										$elm$core$String$fromInt(post.id))
 									])),
-							expect: $elm$http$Http$expectString($author$project$Main$Liked),
+							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
 							url: 'api/likes'
+						}));
+			case 'ClickedDislike':
+				var post = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$elm$http$Http$request(
+						{
+							body: $elm$http$Http$emptyBody,
+							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
+							headers: _List_Nil,
+							method: 'DELETE',
+							timeout: $elm$core$Maybe$Nothing,
+							tracker: $elm$core$Maybe$Nothing,
+							url: A4(
+								$elm$url$Url$Builder$custom,
+								$elm$url$Url$Builder$Relative,
+								_List_fromArray(
+									['api', 'likes']),
+								_List_fromArray(
+									[
+										A2($elm$url$Url$Builder$string, 'user', model.postFormData.user),
+										A2(
+										$elm$url$Url$Builder$string,
+										'post',
+										$elm$core$String$fromInt(post.id))
+									]),
+								$elm$core$Maybe$Nothing)
 						}));
 			default:
 				var result = msg.a;
@@ -6437,6 +6464,9 @@ var $elm$html$Html$main_ = _VirtualDom_node('main');
 var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $author$project$Main$ClickedDislike = function (a) {
+	return {$: 'ClickedDislike', a: a};
+};
 var $author$project$Main$ClickedLike = function (a) {
 	return {$: 'ClickedLike', a: a};
 };
@@ -6510,7 +6540,8 @@ var $author$project$Main$viewPost = function (post) {
 						$elm$html$Html$Attributes$class('like-button'),
 						$elm$html$Html$Attributes$src(
 						post.likedByCurrentUser ? '/static/filled-heart.png' : '/static/empty-heart.png'),
-						$elm$html$Html$Events$onClick(
+						post.likedByCurrentUser ? $elm$html$Html$Events$onClick(
+						$author$project$Main$ClickedDislike(post)) : $elm$html$Html$Events$onClick(
 						$author$project$Main$ClickedLike(post))
 					]),
 				_List_Nil)

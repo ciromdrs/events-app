@@ -18,3 +18,4 @@ get('/api/posts/$id', 'api/posts.php');
 post('/api/posts', 'api/posts.php');
 
 post('/api/likes', 'api/likes.php');
+delete('/api/likes', 'api/likes.php');

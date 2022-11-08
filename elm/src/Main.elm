@@ -76,7 +76,8 @@ type Msg
     | ChangedPostText String
     | ChangedPostUser String
     | ClickedLike Post
-    | Liked (Result Http.Error String)
+    | ClickedDislike Post
+    | LikedDisliked (Result Http.Error String)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -163,11 +164,30 @@ update msg model =
                         [ Http.stringPart "user" model.postFormData.user
                         , Http.stringPart "post" (String.fromInt post.id)
                         ]
-                , expect = Http.expectString Liked
+                , expect = Http.expectString LikedDisliked
                 }
             )
 
-        Liked result ->
+        ClickedDislike post ->
+            ( model
+            , Http.request
+                { method = "DELETE"
+                , headers = []
+                , url =
+                    custom Relative
+                        [ "api", "likes" ]
+                        [ Url.Builder.string "user" model.postFormData.user
+                        , Url.Builder.string "post" (String.fromInt post.id)
+                        ]
+                        Nothing
+                , body = Http.emptyBody
+                , expect = Http.expectString LikedDisliked
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+            )
+
+        LikedDisliked result ->
             case result of
                 Ok _ ->
                     ( model, getRecentPostsCmd model )
@@ -228,7 +248,11 @@ viewPost post =
                  else
                     "/static/empty-heart.png"
                 )
-            , onClick (ClickedLike post)
+            , if post.likedByCurrentUser then
+                onClick (ClickedDislike post)
+
+              else
+                onClick (ClickedLike post)
             ]
             []
         ]

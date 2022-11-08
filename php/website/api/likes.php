@@ -15,5 +15,16 @@ switch ($_SERVER['REQUEST_METHOD']) {
         http_response_code(201);
         header("Location: likes?user=$user&post=$post");
         break;
+
+    case "DELETE":
+        parse_str($_SERVER['QUERY_STRING'], $vars);
+        $user = $vars["user"];
+        $post = $vars["post"];
+        $qry = "DELETE FROM likes WHERE user=:user AND post=:post;";
+        $dbh = DB::getInstance();
+        $sth = $dbh->prepare($qry);
+        $sth->execute(['user' => $user, 'post' => $post]);
+        http_response_code(200);
+        break;
 }
 print_r($response);
