@@ -7,7 +7,6 @@ $response = "";
 switch ($_SERVER['REQUEST_METHOD']) {
     case "POST":
         $user = $_POST["user"];
-        $post = $_POST["post"];
         $qry = 'INSERT INTO likes (user, post) VALUES (:user, :post);';
         $dbh = DB::getInstance();
         $sth = $dbh->prepare($qry);
@@ -19,7 +18,6 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case "DELETE":
         parse_str($_SERVER['QUERY_STRING'], $vars);
         $user = $vars["user"];
-        $post = $vars["post"];
         $qry = "DELETE FROM likes WHERE user=:user AND post=:post;";
         $dbh = DB::getInstance();
         $sth = $dbh->prepare($qry);

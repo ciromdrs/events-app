@@ -56,19 +56,19 @@ final class PostsTest extends RESTTestCase {
     /**
      * @depends testLocationHeader
      */
-    function testInsertedData($id) {
+    function testInsertedData($post_id) {
         $response = $this->client->get(
-            'posts/'.$id,
+            "posts/$post_id",
             ['query' => ['current_user' => 'user1']]
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
-        $this->assertEquals($id, $got['id']);
+        $this->assertEquals($post_id, $got['id']);
         $this->assertEquals('user1', $got['user']);
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
-        return $id;
+        return $post_id;
     }
 
 
@@ -77,10 +77,9 @@ final class PostsTest extends RESTTestCase {
      */
     function testLikeStatusCreated($post_id) {
         $response = $this->client->post(
-            'likes',
+            "posts/$post_id/likes",
             ['form_params' => [
-                'user' => 'user1',
-                'post' => $post_id
+                'user' => 'user1'
             ]]
         );
         $got = $response->getStatusCode();
@@ -94,7 +93,7 @@ final class PostsTest extends RESTTestCase {
      */
     function testLikedPostData($post_id) {
         $response = $this->client->get(
-            'posts/'.$post_id,
+            "posts/$post_id",
             ['query' => ['current_user' => 'user1']]
         );
         $body = (string) $response->getBody();
@@ -112,8 +111,8 @@ final class PostsTest extends RESTTestCase {
      */
     function testDislikeStatusOk($post_id) {
         $response = $this->client->delete(
-            'likes',
-            ['query' => ['user' => 'user1', 'post' => $post_id]]
+            "posts/$post_id/likes",
+            ['query' => ['user' => 'user1']]
         );
         $got = $response->getStatusCode();
         $this->assertEquals(200, $got);
@@ -125,7 +124,7 @@ final class PostsTest extends RESTTestCase {
      */
     function testDislikedPostData($post_id) {
         $response = $this->client->get(
-            'posts/'.$post_id,
+            "posts/$post_id",
             ['query' => ['current_user' => 'user1']]
         );
         $body = (string) $response->getBody();

@@ -54,11 +54,11 @@ function find($connection, $id, $current_user) {
         SELECT posts.*, SUM((likes.user = :current_user)) as liked_by_current_user
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
-        WHERE id=:id
-        GROUP BY posts.id
-        ORDER BY created DESC";
+        WHERE posts.id=:id
+        GROUP BY posts.id;";
     $sth = $connection->prepare($qry);
     $sth->execute(['id' => $id, 'current_user' => $current_user]);
     $data = $sth->fetch($mode=PDO::FETCH_ASSOC);
+    $data['liked_by_current_user'] = $data['liked_by_current_user'] > 0;
     return json_encode($data);
 }

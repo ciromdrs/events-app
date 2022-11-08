@@ -6396,14 +6396,10 @@ var $author$project$Main$update = F2(
 							body: $elm$http$Http$multipartBody(
 								_List_fromArray(
 									[
-										A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
-										A2(
-										$elm$http$Http$stringPart,
-										'post',
-										$elm$core$String$fromInt(post.id))
+										A2($elm$http$Http$stringPart, 'user', model.postFormData.user)
 									])),
 							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
-							url: 'api/likes'
+							url: 'api/posts/' + ($elm$core$String$fromInt(post.id) + '/likes')
 						}));
 			case 'ClickedDislike':
 				var post = msg.a;
@@ -6421,14 +6417,15 @@ var $author$project$Main$update = F2(
 								$elm$url$Url$Builder$custom,
 								$elm$url$Url$Builder$Relative,
 								_List_fromArray(
-									['api', 'likes']),
+									[
+										'api',
+										'posts',
+										$elm$core$String$fromInt(post.id),
+										'likes'
+									]),
 								_List_fromArray(
 									[
-										A2($elm$url$Url$Builder$string, 'user', model.postFormData.user),
-										A2(
-										$elm$url$Url$Builder$string,
-										'post',
-										$elm$core$String$fromInt(post.id))
+										A2($elm$url$Url$Builder$string, 'user', model.postFormData.user)
 									]),
 								$elm$core$Maybe$Nothing)
 						}));

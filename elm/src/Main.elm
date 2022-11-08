@@ -158,11 +158,10 @@ update msg model =
         ClickedLike post ->
             ( model
             , Http.post
-                { url = "api/likes"
+                { url = "api/posts/" ++ String.fromInt post.id ++ "/likes"
                 , body =
                     Http.multipartBody
                         [ Http.stringPart "user" model.postFormData.user
-                        , Http.stringPart "post" (String.fromInt post.id)
                         ]
                 , expect = Http.expectString LikedDisliked
                 }
@@ -175,9 +174,8 @@ update msg model =
                 , headers = []
                 , url =
                     custom Relative
-                        [ "api", "likes" ]
+                        [ "api", "posts", String.fromInt post.id, "likes" ]
                         [ Url.Builder.string "user" model.postFormData.user
-                        , Url.Builder.string "post" (String.fromInt post.id)
                         ]
                         Nothing
                 , body = Http.emptyBody
