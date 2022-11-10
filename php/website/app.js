@@ -6620,6 +6620,7 @@ var $author$project$Main$viewPostForm = function (model) {
 								$elm$html$Html$Attributes$type_('text'),
 								$elm$html$Html$Attributes$id('user'),
 								$elm$html$Html$Attributes$name('user'),
+								$elm$html$Html$Attributes$class('post-form-input post-user'),
 								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostUser),
 								$elm$html$Html$Attributes$placeholder('User'),
 								$elm$html$Html$Attributes$value(model.postFormData.user),
@@ -6638,7 +6639,7 @@ var $author$project$Main$viewPostForm = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$Attributes$id('text'),
-								$elm$html$Html$Attributes$class('post-text-input'),
+								$elm$html$Html$Attributes$class('post-text-input post-form-input'),
 								$elm$html$Html$Attributes$rows(3),
 								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostText),
 								$elm$html$Html$Attributes$placeholder('Write something...'),

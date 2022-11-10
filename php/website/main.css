@@ -4,10 +4,13 @@ body {
 
 .main-content {
     background-color: #FAFAFA;
-    padding: 5px;
 }
 
-.post-text-input {
+.post-form-input {
+    margin-top: 5px;
+}
+
+textarea.post-form-input {
     width: 100%;
     width: -moz-available;          /* For Mozilla */
     width: -webkit-fill-available;  /* For Chrome */
@@ -24,20 +27,30 @@ body {
 }
 
 .post {
+    max-width: 600px;
+    min-width: 250px;
+    height: auto;
     padding: 10px;
     margin:15px;
     background-color: white;
-    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.025);
-}
-
-.post:hover {
-    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.1);
 }
 
 
 button {
     text-transform: uppercase;
     font-weight: bold;
+    font-size: 11pt;
+    color: black;
+    background-color: #ddd;
+
+    border: none;
+    border-radius: 5px;
+    padding: 7px;
+
+}
+
+button:hover {
+    background-color: #eee;
 }
 
 .like-button, .dislike-button {
@@ -51,4 +64,14 @@ button {
 
 .dislike-button {
     content: url('static/filled-heart.png');
+}
+
+.shadowed, button, .post {
+    --light-shadow: rgba(0, 0, 0, .05);
+    box-shadow: 0px 6px 10px var(--light-shadow);
+}
+
+.shadowed:hover, button:hover, .post:hover {
+    --dark-shadow: rgba(0, 0, 0, .15);
+    box-shadow: 0px 6px 10px var(--dark-shadow);
 }

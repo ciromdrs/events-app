@@ -268,6 +268,7 @@ viewPostForm model =
                 [ type_ "text"
                 , id "user"
                 , name "user"
+                , class "post-form-input post-user"
                 , onInput ChangedPostUser
                 , placeholder "User"
                 , value model.postFormData.user
@@ -279,7 +280,7 @@ viewPostForm model =
         , div []
             [ textarea
                 [ id "text"
-                , class "post-text-input"
+                , class "post-text-input post-form-input"
                 , rows 3
                 , onInput ChangedPostText
                 , placeholder "Write something..."
