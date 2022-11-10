@@ -6529,7 +6529,7 @@ var $author$project$Main$viewPost = function (post) {
 				_List_fromArray(
 					[
 						$elm$html$Html$Attributes$class(
-						post.likedByCurrentUser ? 'like-button' : 'dislike-button'),
+						post.likedByCurrentUser ? 'dislike-button' : 'like-button'),
 						post.likedByCurrentUser ? $elm$html$Html$Events$onClick(
 						$author$project$Main$ClickedDislike(post)) : $elm$html$Html$Events$onClick(
 						$author$project$Main$ClickedLike(post))

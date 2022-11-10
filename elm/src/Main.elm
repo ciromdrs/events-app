@@ -240,10 +240,10 @@ viewPost post =
         , img
             [ class
                 (if post.likedByCurrentUser then
-                    "like-button"
+                    "dislike-button"
 
                  else
-                    "dislike-button"
+                    "like-button"
                 )
             , if post.likedByCurrentUser then
                 onClick (ClickedDislike post)
