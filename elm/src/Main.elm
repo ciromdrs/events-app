@@ -1,8 +1,8 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, a, button, div, form, i, img, input, label, li, main_, nav, span, text, textarea, ul)
-import Html.Attributes exposing (action, attribute, class, for, id, method, name, placeholder, rows, type_, value)
+import Html exposing (Html, button, div, img, input, main_, span, text, textarea)
+import Html.Attributes exposing (class, id, name, placeholder, rows, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
