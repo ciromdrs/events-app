@@ -33,7 +33,8 @@ init flags =
             { debugText = ""
             , status = Loading
             , posts = []
-            , postFormData = { user = "default", text = "", photo = Nothing }
+            , user = "default"
+            , postFormData = { text = "", photo = Nothing }
             }
     in
     ( model
@@ -48,8 +49,9 @@ init flags =
 type alias Model =
     { debugText : String
     , status : Status
+    , user : String
     , posts : List Post
-    , postFormData : { user : String, text : String, photo : Maybe File }
+    , postFormData : { text : String, photo : Maybe File }
     }
 
 
@@ -77,12 +79,13 @@ type Msg
     | ClickedPost
     | Posted (Result Http.Error String)
     | ChangedPostText String
-    | ChangedPostUser String
+    | ChangedUser String
     | ChangedPostPhoto File
     | PickPhoto
     | ClickedLike Post
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
+    | ClickedChangeUser
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -109,12 +112,8 @@ update msg model =
                         _ ->
                             ( { modelIdle | debugText = "Unknown error" }, Cmd.none )
 
-        ChangedPostUser new ->
-            let
-                newData =
-                    { formData | user = new }
-            in
-            ( { model | postFormData = newData }, Cmd.none )
+        ChangedUser new ->
+            ( { model | user = new }, Cmd.none )
 
         ChangedPostText new ->
             let
@@ -143,7 +142,7 @@ update msg model =
                         { url = "api/posts"
                         , body =
                             Http.multipartBody
-                                [ Http.stringPart "user" model.postFormData.user
+                                [ Http.stringPart "user" model.user
                                 , Http.stringPart "text" model.postFormData.text
                                 , Http.filePart "photo" photo
                                 ]
@@ -183,7 +182,7 @@ update msg model =
                 { url = "api/posts/" ++ String.fromInt post.id ++ "/likes"
                 , body =
                     Http.multipartBody
-                        [ Http.stringPart "user" model.postFormData.user
+                        [ Http.stringPart "user" model.user
                         ]
                 , expect = Http.expectString LikedDisliked
                 }
@@ -197,7 +196,7 @@ update msg model =
                 , url =
                     custom Relative
                         [ "api", "posts", String.fromInt post.id, "likes" ]
-                        [ Url.Builder.string "user" model.postFormData.user
+                        [ Url.Builder.string "user" model.user
                         ]
                         Nothing
                 , body = Http.emptyBody
@@ -215,6 +214,12 @@ update msg model =
                 Err errMessage ->
                     ( { model | debugText = Debug.toString errMessage }, Cmd.none )
 
+        ClickedChangeUser ->
+            -- model is up-to-date, just reloads recent posts
+            ( model
+            , getRecentPostsCmd model
+            )
+
 
 getRecentPostsCmd : Model -> Cmd Msg
 getRecentPostsCmd model =
@@ -222,7 +227,7 @@ getRecentPostsCmd model =
         { url =
             custom Relative
                 [ "api", "posts" ]
-                [ Url.Builder.string "current_user" model.postFormData.user ]
+                [ Url.Builder.string "current_user" model.user ]
                 Nothing
         , expect = Http.expectJson GotPosts (list postDecoder)
         }
@@ -236,6 +241,20 @@ view : Model -> Html Msg
 view model =
     div []
         [ div [] [ span [] [ text model.debugText ] ]
+        , div []
+            [ input
+                [ type_ "text"
+                , id "user"
+                , name "user"
+                , class "post-form-input post-user"
+                , onInput ChangedUser
+                , placeholder "User"
+                , value model.user
+                , Html.Attributes.required True
+                ]
+                []
+            , button [ onClick ClickedChangeUser ] [ text "Change User" ]
+            ]
         , main_ [ class "main-content" ]
             [ viewPostForm model
             , div
@@ -297,18 +316,6 @@ viewPostForm model =
             []
             [ button [ class "small", onClick PickPhoto ] [ text "Select Photo" ]
             , span [] [ text photo ]
-            , emptyDiv
-            , input
-                [ type_ "text"
-                , id "user"
-                , name "user"
-                , class "post-form-input post-user"
-                , onInput ChangedPostUser
-                , placeholder "User"
-                , value model.postFormData.user
-                , Html.Attributes.required True
-                ]
-                []
             ]
         , emptyDiv
         , div []

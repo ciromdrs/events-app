@@ -6429,7 +6429,7 @@ var $author$project$Main$getRecentPostsCmd = function (model) {
 					['api', 'posts']),
 				_List_fromArray(
 					[
-						A2($elm$url$Url$Builder$string, 'current_user', model.postFormData.user)
+						A2($elm$url$Url$Builder$string, 'current_user', model.user)
 					]),
 				$elm$core$Maybe$Nothing)
 		});
@@ -6437,9 +6437,10 @@ var $author$project$Main$getRecentPostsCmd = function (model) {
 var $author$project$Main$init = function (flags) {
 	var model = {
 		debugText: '',
-		postFormData: {photo: $elm$core$Maybe$Nothing, text: '', user: 'default'},
+		postFormData: {photo: $elm$core$Maybe$Nothing, text: ''},
 		posts: _List_Nil,
-		status: $author$project$Main$Loading
+		status: $author$project$Main$Loading,
+		user: 'default'
 	};
 	return _Utils_Tuple2(
 		model,
@@ -6522,15 +6523,12 @@ var $author$project$Main$update = F2(
 							$elm$core$Platform$Cmd$none);
 					}
 				}
-			case 'ChangedPostUser':
+			case 'ChangedUser':
 				var _new = msg.a;
-				var newData = _Utils_update(
-					formData,
-					{user: _new});
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{postFormData: newData}),
+						{user: _new}),
 					$elm$core$Platform$Cmd$none);
 			case 'ChangedPostText':
 				var _new = msg.a;
@@ -6574,7 +6572,7 @@ var $author$project$Main$update = F2(
 									body: $elm$http$Http$multipartBody(
 										_List_fromArray(
 											[
-												A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
+												A2($elm$http$Http$stringPart, 'user', model.user),
 												A2($elm$http$Http$stringPart, 'text', model.postFormData.text),
 												A2($elm$http$Http$filePart, 'photo', photo)
 											])),
@@ -6621,7 +6619,7 @@ var $author$project$Main$update = F2(
 							body: $elm$http$Http$multipartBody(
 								_List_fromArray(
 									[
-										A2($elm$http$Http$stringPart, 'user', model.postFormData.user)
+										A2($elm$http$Http$stringPart, 'user', model.user)
 									])),
 							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
 							url: 'api/posts/' + ($elm$core$String$fromInt(post.id) + '/likes')
@@ -6650,11 +6648,11 @@ var $author$project$Main$update = F2(
 									]),
 								_List_fromArray(
 									[
-										A2($elm$url$Url$Builder$string, 'user', model.postFormData.user)
+										A2($elm$url$Url$Builder$string, 'user', model.user)
 									]),
 								$elm$core$Maybe$Nothing)
 						}));
-			default:
+			case 'LikedDisliked':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					return _Utils_Tuple2(
@@ -6670,8 +6668,17 @@ var $author$project$Main$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
+			default:
+				return _Utils_Tuple2(
+					model,
+					$author$project$Main$getRecentPostsCmd(model));
 		}
 	});
+var $author$project$Main$ChangedUser = function (a) {
+	return {$: 'ChangedUser', a: a};
+};
+var $author$project$Main$ClickedChangeUser = {$: 'ClickedChangeUser'};
+var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -6682,17 +6689,10 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$html$Html$main_ = _VirtualDom_node('main');
-var $elm$html$Html$span = _VirtualDom_node('span');
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$ClickedDislike = function (a) {
-	return {$: 'ClickedDislike', a: a};
-};
-var $author$project$Main$ClickedLike = function (a) {
-	return {$: 'ClickedLike', a: a};
-};
-var $elm$html$Html$img = _VirtualDom_node('img');
+var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -6710,6 +6710,59 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$required = $elm$html$Html$Attributes$boolProperty('required');
+var $elm$html$Html$span = _VirtualDom_node('span');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Main$ClickedDislike = function (a) {
+	return {$: 'ClickedDislike', a: a};
+};
+var $author$project$Main$ClickedLike = function (a) {
+	return {$: 'ClickedLike', a: a};
+};
+var $elm$html$Html$img = _VirtualDom_node('img');
 var $elm$html$Html$Attributes$src = function (url) {
 	return A2(
 		$elm$html$Html$Attributes$stringProperty,
@@ -6779,57 +6832,9 @@ var $author$project$Main$viewPost = function (post) {
 var $author$project$Main$ChangedPostText = function (a) {
 	return {$: 'ChangedPostText', a: a};
 };
-var $author$project$Main$ChangedPostUser = function (a) {
-	return {$: 'ChangedPostUser', a: a};
-};
 var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
 var $author$project$Main$PickPhoto = {$: 'PickPhoto'};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
-var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$file$File$name = _File_name;
-var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
-var $elm$html$Html$Events$alwaysStop = function (x) {
-	return _Utils_Tuple2(x, true);
-};
-var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
-	return {$: 'MayStopPropagation', a: a};
-};
-var $elm$html$Html$Events$stopPropagationOn = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
-	});
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $elm$html$Html$Events$targetValue = A2(
-	$elm$json$Json$Decode$at,
-	_List_fromArray(
-		['target', 'value']),
-	$elm$json$Json$Decode$string);
-var $elm$html$Html$Events$onInput = function (tagger) {
-	return A2(
-		$elm$html$Html$Events$stopPropagationOn,
-		'input',
-		A2(
-			$elm$json$Json$Decode$map,
-			$elm$html$Html$Events$alwaysStop,
-			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
-};
-var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
-var $elm$json$Json$Encode$bool = _Json_wrap;
-var $elm$html$Html$Attributes$boolProperty = F2(
-	function (key, bool) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$bool(bool));
-	});
-var $elm$html$Html$Attributes$required = $elm$html$Html$Attributes$boolProperty('required');
 var $elm$html$Html$Attributes$rows = function (n) {
 	return A2(
 		_VirtualDom_attribute,
@@ -6837,8 +6842,6 @@ var $elm$html$Html$Attributes$rows = function (n) {
 		$elm$core$String$fromInt(n));
 };
 var $elm$html$Html$textarea = _VirtualDom_node('textarea');
-var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
-var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewPostForm = function (model) {
 	var photo = function () {
 		var _v0 = model.postFormData.photo;
@@ -6880,22 +6883,7 @@ var $author$project$Main$viewPostForm = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$text(photo)
-							])),
-						emptyDiv,
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$id('user'),
-								$elm$html$Html$Attributes$name('user'),
-								$elm$html$Html$Attributes$class('post-form-input post-user'),
-								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostUser),
-								$elm$html$Html$Attributes$placeholder('User'),
-								$elm$html$Html$Attributes$value(model.postFormData.user),
-								$elm$html$Html$Attributes$required(true)
-							]),
-						_List_Nil)
+							]))
 					])),
 				emptyDiv,
 				A2(
@@ -6946,6 +6934,36 @@ var $author$project$Main$view = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$text(model.debugText)
+							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$id('user'),
+								$elm$html$Html$Attributes$name('user'),
+								$elm$html$Html$Attributes$class('post-form-input post-user'),
+								$elm$html$Html$Events$onInput($author$project$Main$ChangedUser),
+								$elm$html$Html$Attributes$placeholder('User'),
+								$elm$html$Html$Attributes$value(model.user),
+								$elm$html$Html$Attributes$required(true)
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Main$ClickedChangeUser)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Change User')
 							]))
 					])),
 				A2(
