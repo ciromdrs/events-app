@@ -4562,7 +4562,185 @@ function _Url_percentDecode(string)
 	{
 		return $elm$core$Maybe$Nothing;
 	}
-}var $elm$core$Basics$EQ = {$: 'EQ'};
+}
+
+
+// DECODER
+
+var _File_decoder = _Json_decodePrim(function(value) {
+	// NOTE: checks if `File` exists in case this is run on node
+	return (typeof File !== 'undefined' && value instanceof File)
+		? $elm$core$Result$Ok(value)
+		: _Json_expecting('a FILE', value);
+});
+
+
+// METADATA
+
+function _File_name(file) { return file.name; }
+function _File_mime(file) { return file.type; }
+function _File_size(file) { return file.size; }
+
+function _File_lastModified(file)
+{
+	return $elm$time$Time$millisToPosix(file.lastModified);
+}
+
+
+// DOWNLOAD
+
+var _File_downloadNode;
+
+function _File_getDownloadNode()
+{
+	return _File_downloadNode || (_File_downloadNode = document.createElement('a'));
+}
+
+var _File_download = F3(function(name, mime, content)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var blob = new Blob([content], {type: mime});
+
+		// for IE10+
+		if (navigator.msSaveOrOpenBlob)
+		{
+			navigator.msSaveOrOpenBlob(blob, name);
+			return;
+		}
+
+		// for HTML5
+		var node = _File_getDownloadNode();
+		var objectUrl = URL.createObjectURL(blob);
+		node.href = objectUrl;
+		node.download = name;
+		_File_click(node);
+		URL.revokeObjectURL(objectUrl);
+	});
+});
+
+function _File_downloadUrl(href)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var node = _File_getDownloadNode();
+		node.href = href;
+		node.download = '';
+		node.origin === location.origin || (node.target = '_blank');
+		_File_click(node);
+	});
+}
+
+
+// IE COMPATIBILITY
+
+function _File_makeBytesSafeForInternetExplorer(bytes)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/10
+	// all other browsers can just run `new Blob([bytes])` directly with no problem
+	//
+	return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+}
+
+function _File_click(node)
+{
+	// only needed by IE10 and IE11 to fix https://github.com/elm/file/issues/11
+	// all other browsers have MouseEvent and do not need this conditional stuff
+	//
+	if (typeof MouseEvent === 'function')
+	{
+		node.dispatchEvent(new MouseEvent('click'));
+	}
+	else
+	{
+		var event = document.createEvent('MouseEvents');
+		event.initMouseEvent('click', true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+		document.body.appendChild(node);
+		node.dispatchEvent(event);
+		document.body.removeChild(node);
+	}
+}
+
+
+// UPLOAD
+
+var _File_node;
+
+function _File_uploadOne(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			callback(_Scheduler_succeed(event.target.files[0]));
+		});
+		_File_click(_File_node);
+	});
+}
+
+function _File_uploadOneOrMore(mimes)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		_File_node = document.createElement('input');
+		_File_node.type = 'file';
+		_File_node.multiple = true;
+		_File_node.accept = A2($elm$core$String$join, ',', mimes);
+		_File_node.addEventListener('change', function(event)
+		{
+			var elmFiles = _List_fromArray(event.target.files);
+			callback(_Scheduler_succeed(_Utils_Tuple2(elmFiles.a, elmFiles.b)));
+		});
+		_File_click(_File_node);
+	});
+}
+
+
+// CONTENT
+
+function _File_toString(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsText(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toBytes(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(new DataView(reader.result)));
+		});
+		reader.readAsArrayBuffer(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+function _File_toUrl(blob)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var reader = new FileReader();
+		reader.addEventListener('loadend', function() {
+			callback(_Scheduler_succeed(reader.result));
+		});
+		reader.readAsDataURL(blob);
+		return function() { reader.abort(); };
+	});
+}
+
+var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
@@ -6184,9 +6362,9 @@ var $elm$http$Http$get = function (r) {
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Main$Post = F5(
-	function (id, user, text, created, likedByCurrentUser) {
-		return {created: created, id: id, likedByCurrentUser: likedByCurrentUser, text: text, user: user};
+var $author$project$Main$Post = F6(
+	function (id, user, text, created, likedByCurrentUser, imgUrl) {
+		return {created: created, id: id, imgUrl: imgUrl, likedByCurrentUser: likedByCurrentUser, text: text, user: user};
 	});
 var $elm$json$Json$Decode$bool = _Json_decodeBool;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
@@ -6202,25 +6380,29 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Main$postDecoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'liked_by_current_user',
-	$elm$json$Json$Decode$bool,
+	'imgUrl',
+	$elm$json$Json$Decode$string,
 	A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'created',
-		$elm$json$Json$Decode$string,
+		'liked_by_current_user',
+		$elm$json$Json$Decode$bool,
 		A3(
 			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'text',
+			'created',
 			$elm$json$Json$Decode$string,
 			A3(
 				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'user',
+				'text',
 				$elm$json$Json$Decode$string,
 				A3(
 					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-					'id',
-					$elm$json$Json$Decode$int,
-					$elm$json$Json$Decode$succeed($author$project$Main$Post))))));
+					'user',
+					$elm$json$Json$Decode$string,
+					A3(
+						$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+						'id',
+						$elm$json$Json$Decode$int,
+						$elm$json$Json$Decode$succeed($author$project$Main$Post)))))));
 var $elm$url$Url$Builder$QueryParameter = F2(
 	function (a, b) {
 		return {$: 'QueryParameter', a: a, b: b};
@@ -6255,7 +6437,7 @@ var $author$project$Main$getRecentPostsCmd = function (model) {
 var $author$project$Main$init = function (flags) {
 	var model = {
 		debugText: '',
-		postFormData: {text: '', user: 'default'},
+		postFormData: {photo: $elm$core$Maybe$Nothing, text: '', user: 'default'},
 		posts: _List_Nil,
 		status: $author$project$Main$Loading
 	};
@@ -6265,6 +6447,9 @@ var $author$project$Main$init = function (flags) {
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Main$ChangedPostPhoto = function (a) {
+	return {$: 'ChangedPostPhoto', a: a};
+};
 var $author$project$Main$Idle = {$: 'Idle'};
 var $author$project$Main$LikedDisliked = function (a) {
 	return {$: 'LikedDisliked', a: a};
@@ -6278,6 +6463,18 @@ var $elm$http$Http$expectString = function (toMsg) {
 		toMsg,
 		$elm$http$Http$resolve($elm$core$Result$Ok));
 };
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$file$File$Select$file = F2(
+	function (mimes, toMsg) {
+		return A2(
+			$elm$core$Task$perform,
+			toMsg,
+			_File_uploadOne(mimes));
+	});
+var $elm$http$Http$filePart = _Http_pair;
 var $elm$http$Http$multipartBody = function (parts) {
 	return A2(
 		_Http_pair,
@@ -6294,6 +6491,7 @@ var $elm$http$Http$stringPart = _Http_pair;
 var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Main$update = F2(
 	function (msg, model) {
+		var formData = model.postFormData;
 		switch (msg.$) {
 			case 'GotPosts':
 				var result = msg.a;
@@ -6326,7 +6524,6 @@ var $author$project$Main$update = F2(
 				}
 			case 'ChangedPostUser':
 				var _new = msg.a;
-				var formData = model.postFormData;
 				var newData = _Utils_update(
 					formData,
 					{user: _new});
@@ -6337,7 +6534,6 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 'ChangedPostText':
 				var _new = msg.a;
-				var formData = model.postFormData;
 				var newData = _Utils_update(
 					formData,
 					{text: _new});
@@ -6346,20 +6542,49 @@ var $author$project$Main$update = F2(
 						model,
 						{postFormData: newData}),
 					$elm$core$Platform$Cmd$none);
+			case 'ChangedPostPhoto':
+				var _new = msg.a;
+				var newData = _Utils_update(
+					formData,
+					{
+						photo: $elm$core$Maybe$Just(_new)
+					});
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{postFormData: newData}),
+					$elm$core$Platform$Cmd$none);
+			case 'PickPhoto':
+				return _Utils_Tuple2(
+					model,
+					A2(
+						$elm$file$File$Select$file,
+						_List_fromArray(
+							['image/*']),
+						$author$project$Main$ChangedPostPhoto));
 			case 'ClickedPost':
 				return _Utils_Tuple2(
 					model,
-					$elm$http$Http$post(
-						{
-							body: $elm$http$Http$multipartBody(
-								_List_fromArray(
-									[
-										A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
-										A2($elm$http$Http$stringPart, 'text', model.postFormData.text)
-									])),
-							expect: $elm$http$Http$expectString($author$project$Main$Posted),
-							url: 'api/posts'
-						}));
+					function () {
+						var _v3 = model.postFormData.photo;
+						if (_v3.$ === 'Just') {
+							var photo = _v3.a;
+							return $elm$http$Http$post(
+								{
+									body: $elm$http$Http$multipartBody(
+										_List_fromArray(
+											[
+												A2($elm$http$Http$stringPart, 'user', model.postFormData.user),
+												A2($elm$http$Http$stringPart, 'text', model.postFormData.text),
+												A2($elm$http$Http$filePart, 'photo', photo)
+											])),
+									expect: $elm$http$Http$expectString($author$project$Main$Posted),
+									url: 'api/posts'
+								});
+						} else {
+							return $elm$core$Platform$Cmd$none;
+						}
+					}());
 			case 'Posted':
 				var result = msg.a;
 				var modelLoading = _Utils_update(
@@ -6369,12 +6594,12 @@ var $author$project$Main$update = F2(
 					if (result.$ === 'Ok') {
 						var value = result.a;
 						var oldFormData = modelLoading.postFormData;
-						var clearText = _Utils_update(
+						var clearFields = _Utils_update(
 							oldFormData,
-							{text: ''});
+							{photo: $elm$core$Maybe$Nothing, text: ''});
 						return _Utils_update(
 							modelLoading,
-							{postFormData: clearText});
+							{postFormData: clearFields});
 					} else {
 						var error = result.a;
 						return _Utils_update(
@@ -6485,6 +6710,12 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $elm$html$Html$Attributes$src = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'src',
+		_VirtualDom_noJavaScriptOrHtmlUri(url));
+};
 var $author$project$Main$viewPost = function (post) {
 	return A2(
 		$elm$html$Html$div,
@@ -6494,6 +6725,14 @@ var $author$project$Main$viewPost = function (post) {
 			]),
 		_List_fromArray(
 			[
+				A2(
+				$elm$html$Html$img,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('post-image'),
+						$elm$html$Html$Attributes$src(post.imgUrl)
+					]),
+				_List_Nil),
 				A2(
 				$elm$html$Html$span,
 				_List_fromArray(
@@ -6544,9 +6783,11 @@ var $author$project$Main$ChangedPostUser = function (a) {
 	return {$: 'ChangedPostUser', a: a};
 };
 var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
+var $author$project$Main$PickPhoto = {$: 'PickPhoto'};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$file$File$name = _File_name;
 var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
@@ -6599,6 +6840,15 @@ var $elm$html$Html$textarea = _VirtualDom_node('textarea');
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewPostForm = function (model) {
+	var photo = function () {
+		var _v0 = model.postFormData.photo;
+		if (_v0.$ === 'Just') {
+			var photoFile = _v0.a;
+			return $elm$file$File$name(photoFile);
+		} else {
+			return '';
+		}
+	}();
 	var emptyDiv = A2($elm$html$Html$div, _List_Nil, _List_Nil);
 	return A2(
 		$elm$html$Html$div,
@@ -6613,6 +6863,25 @@ var $author$project$Main$viewPostForm = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('small'),
+								$elm$html$Html$Events$onClick($author$project$Main$PickPhoto)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Select Photo')
+							])),
+						A2(
+						$elm$html$Html$span,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text(photo)
+							])),
+						emptyDiv,
 						A2(
 						$elm$html$Html$input,
 						_List_fromArray(

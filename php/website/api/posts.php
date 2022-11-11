@@ -2,9 +2,9 @@
 
 require_once('db.php');
 
-$response = "";
+$response = '';
 switch ($_SERVER['REQUEST_METHOD']) {
-    case "GET":
+    case 'GET':
         $dbh = DB::getInstance();
         $current_user = $_GET['current_user'];
         if (isset($id)) {
@@ -14,16 +14,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
         }
         break;
 
-    case "POST":
-        $user = $_POST["user"];
-        $text = $_POST["text"];
-        $qry = 'INSERT INTO posts (user, text) VALUES (:user, :text);';
-        $dbh = DB::getInstance();
-        $sth = $dbh->prepare($qry);
-        $sth->execute(['user' => $user, 'text' => $text]);
-        $lastId = $dbh->lastInsertId();
-        http_response_code(201);
-        header("Location: posts/$lastId");
+    case 'POST':
+        $user = $_POST['user'];
+        $text = $_POST['text'];
+        $photo = $_FILES['photo'];
+        insert($user, $text, $photo);
         break;
 }
 print_r($response);
@@ -31,7 +26,7 @@ print_r($response);
 
 function findAll($connection, $current_user) {
     $qry = "
-        SELECT posts.*, SUM((likes.user = :current_user)) as liked_by_current_user
+        SELECT id, posts.user, text, created, CONCAT(\"uploaded_photos/\",SHA1(image)) as imgUrl, SUM(likes.user = :current_user) as liked_by_current_user
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
         GROUP BY posts.id
@@ -61,4 +56,21 @@ function find($connection, $id, $current_user) {
     $data = $sth->fetch($mode=PDO::FETCH_ASSOC);
     $data['liked_by_current_user'] = $data['liked_by_current_user'] > 0;
     return json_encode($data);
+}
+
+
+function insert($user, $text, $photo) {
+    $dbh = DB::getInstance();
+    $sth = $dbh->prepare('INSERT INTO images () values ();');
+    $sth->execute();
+    $image = $dbh->lastInsertId();
+    $filename = sha1($image);
+    move_uploaded_file($photo['tmp_name'], "uploaded_photos/$filename");
+
+    $qry = 'INSERT INTO posts (user, text, image) VALUES (:user, :text, :image);';
+    $sth = $dbh->prepare($qry);
+    $sth->execute(['user' => $user, 'text' => $text, 'image' => $image]);
+    $lastId = $dbh->lastInsertId();
+    http_response_code(201);
+    header("Location: posts/$lastId");
 }

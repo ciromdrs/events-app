@@ -10,7 +10,9 @@ RUN a2enmod rewrite && \
 # Install PDO Mysql
 RUN docker-php-ext-install pdo_mysql
 
-
+# Create uploaded photos directory
+RUN mkdir -p html/uploaded_photos/ && \
+    chown www-data html/uploaded_photos/
 
 # dev
 FROM base AS dev

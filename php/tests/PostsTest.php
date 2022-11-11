@@ -1,7 +1,7 @@
 <?php
+use GuzzleHttp\Psr7;
 
 require_once("RESTTestCase.php");
-
 
 final class PostsTest extends RESTTestCase {
     function __construct() {
@@ -10,14 +10,27 @@ final class PostsTest extends RESTTestCase {
 
 
     static function setUpBeforeClass(): void {
-        $dbh = new PDO('mysql:host=elm-photo-gallery-db-1;dbname=eventsapp', 'root', 'example');
-        $qry = 'DELETE FROM likes; DELETE FROM posts;';
+        // Clear database
+        $dbh = new PDO(
+            'mysql:host=elm-photo-gallery-db-1;dbname=eventsapp',
+            'root',
+            'example'
+        );
+        $qry = 'DELETE FROM likes; DELETE FROM posts; DELETE FROM images;';
         $sth = $dbh->prepare($qry);
         $sth->execute();
+
+        // Clear uploaded photos directory
+        $files = glob('html/uploaded_photos/*');
+        foreach($files as $file) {
+            if(is_file($file)) {
+                unlink($file); // delete file
+            }
+        }
     }
 
 
-    function testStartsEmpty(): void {
+    function testDatabaseStartsEmpty(): void {
         $params = ['query' => ['current_user' => 'user1']];
         $response = $this->client->get('posts', $params);
         $got = (string) $response->getBody();
@@ -25,19 +38,24 @@ final class PostsTest extends RESTTestCase {
     }
 
 
+    function testUploadedPhotosDirectoryStartsEmpty(): void {
+        $files = glob('html/uploaded_photos/*');
+        $this->assertEquals(0, count($files));
+    }
+
+
     /**
-     * @depends testStartsEmpty
+     * @depends testDatabaseStartsEmpty
+     * @depends testUploadedPhotosDirectoryStartsEmpty
      */
     function testPostStatusCreated() {
-        $username = 'user1';
+        $user = 'user1';
         $text = 'Hello!';
-        $response = $this->client->post('posts', [
-            'form_params' => [
-                'user' => $username,
-                'text' => $text
-            ]]);
+        $photo = 'tests/sample_data/long-horizontal.png';
+        $response = $this->client->post('posts', postMultipart($user, $text, $photo));
         $got = $response->getStatusCode();
-        $this->assertEquals(201, $got);
+        $body = (string) $response->getBody();
+        $this->assertEquals(201, $got, $body);
         return $response;
     }
 
@@ -135,5 +153,24 @@ final class PostsTest extends RESTTestCase {
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
     }
+}
 
+
+function postMultipart($user, $text, $photo) {
+    return [
+        'multipart' => [
+            [
+                'name'     => 'user',
+                'contents' => $user,
+            ],
+            [
+                'name'     => 'text',
+                'contents' => $text
+            ],
+            [
+                'name'     => 'photo',
+                'contents' => Psr7\Utils::tryFopen($photo, 'r'),
+            ],
+        ]
+    ];
 }

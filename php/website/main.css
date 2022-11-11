@@ -26,6 +26,12 @@ textarea.post-form-input {
     font-size: small;
 }
 
+.post-image {
+    min-height: 150px;
+    max-height: 700px;
+    width: 100%;
+}
+
 .post {
     max-width: 600px;
     min-width: 250px;
@@ -41,16 +47,22 @@ button {
     font-weight: bold;
     font-size: 11pt;
     color: black;
-    background-color: #ddd;
+    background-color: #cfcfcf;
 
     border: none;
     border-radius: 5px;
     padding: 7px;
+}
 
+button.small {
+    text-transform: none;
+    border: none;
+    border-radius: 5px;
+    padding: 5px;
 }
 
 button:hover {
-    background-color: #eee;
+    background-color: #d7d7d7;
 }
 
 .like-button, .dislike-button {

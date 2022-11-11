@@ -1,8 +1,10 @@
 module Main exposing (..)
 
 import Browser
+import File exposing (File)
+import File.Select as Select
 import Html exposing (Html, button, div, img, input, main_, span, text, textarea)
-import Html.Attributes exposing (class, id, name, placeholder, rows, type_, value)
+import Html.Attributes exposing (class, id, name, placeholder, rows, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
@@ -31,7 +33,7 @@ init flags =
             { debugText = ""
             , status = Loading
             , posts = []
-            , postFormData = { user = "default", text = "" }
+            , postFormData = { user = "default", text = "", photo = Nothing }
             }
     in
     ( model
@@ -47,7 +49,7 @@ type alias Model =
     { debugText : String
     , status : Status
     , posts : List Post
-    , postFormData : { user : String, text : String }
+    , postFormData : { user : String, text : String, photo : Maybe File }
     }
 
 
@@ -62,6 +64,7 @@ type alias Post =
     , text : String
     , created : String
     , likedByCurrentUser : Bool
+    , imgUrl : String
     }
 
 
@@ -75,6 +78,8 @@ type Msg
     | Posted (Result Http.Error String)
     | ChangedPostText String
     | ChangedPostUser String
+    | ChangedPostPhoto File
+    | PickPhoto
     | ClickedLike Post
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
@@ -82,6 +87,10 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        formData =
+            model.postFormData
+    in
     case msg of
         GotPosts result ->
             let
@@ -102,9 +111,6 @@ update msg model =
 
         ChangedPostUser new ->
             let
-                formData =
-                    model.postFormData
-
                 newData =
                     { formData | user = new }
             in
@@ -112,25 +118,41 @@ update msg model =
 
         ChangedPostText new ->
             let
-                formData =
-                    model.postFormData
-
                 newData =
                     { formData | text = new }
             in
             ( { model | postFormData = newData }, Cmd.none )
 
+        ChangedPostPhoto new ->
+            let
+                newData =
+                    { formData | photo = Just new }
+            in
+            ( { model | postFormData = newData }, Cmd.none )
+
+        PickPhoto ->
+            ( model
+            , Select.file [ "image/*" ] ChangedPostPhoto
+            )
+
         ClickedPost ->
             ( model
-            , Http.post
-                { url = "api/posts"
-                , body =
-                    Http.multipartBody
-                        [ Http.stringPart "user" model.postFormData.user
-                        , Http.stringPart "text" model.postFormData.text
-                        ]
-                , expect = Http.expectString Posted
-                }
+            , case model.postFormData.photo of
+                Just photo ->
+                    Http.post
+                        { url = "api/posts"
+                        , body =
+                            Http.multipartBody
+                                [ Http.stringPart "user" model.postFormData.user
+                                , Http.stringPart "text" model.postFormData.text
+                                , Http.filePart "photo" photo
+                                ]
+                        , expect = Http.expectString Posted
+                        }
+
+                Nothing ->
+                    -- Show 'required' message
+                    Cmd.none
             )
 
         Posted result ->
@@ -145,10 +167,10 @@ update msg model =
                                 oldFormData =
                                     modelLoading.postFormData
 
-                                clearText =
-                                    { oldFormData | text = "" }
+                                clearFields =
+                                    { oldFormData | text = "", photo = Nothing }
                             in
-                            { modelLoading | postFormData = clearText }
+                            { modelLoading | postFormData = clearFields }
 
                         Err error ->
                             { modelLoading | debugText = Debug.toString result }
@@ -234,7 +256,8 @@ view model =
 viewPost : Post -> Html Msg
 viewPost post =
     div [ class "post" ]
-        [ span [ class "post-user" ] [ text post.user ]
+        [ img [ class "post-image", src post.imgUrl ] []
+        , span [ class "post-user" ] [ text post.user ]
         , span [ class "post-date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]
         , img
@@ -260,11 +283,22 @@ viewPostForm model =
     let
         emptyDiv =
             div [] []
+
+        photo =
+            case model.postFormData.photo of
+                Just photoFile ->
+                    File.name photoFile
+
+                Nothing ->
+                    ""
     in
     div [ class "post" ]
         [ div
             []
-            [ input
+            [ button [ class "small", onClick PickPhoto ] [ text "Select Photo" ]
+            , span [] [ text photo ]
+            , emptyDiv
+            , input
                 [ type_ "text"
                 , id "user"
                 , name "user"
@@ -303,3 +337,4 @@ postDecoder =
         |> required "text" string
         |> required "created" string
         |> required "liked_by_current_user" bool
+        |> required "imgUrl" string

@@ -179,3 +179,5 @@ repl-temp-*
 
 # End of https://www.toptal.com/developers/gitignore/api/django,elm
 
+# uploaded photos
+php/website/uploaded_photos/*
