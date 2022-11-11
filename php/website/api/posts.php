@@ -15,9 +15,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
         break;
 
     case 'POST':
-        $user = $_POST['user'];
-        $text = $_POST['text'];
-        $photo = $_FILES['photo'];
+        [$is_valid, $user, $text, $photo] = validateInput();
+        if (!$is_valid) {
+            http_response_code(400);
+            return;
+        }
         insert($user, $text, $photo);
         break;
 }
@@ -73,4 +75,31 @@ function insert($user, $text, $photo) {
     $lastId = $dbh->lastInsertId();
     http_response_code(201);
     header("Location: posts/$lastId");
+}
+
+
+function validateInput() {
+    $invalid = [False, null, null, null];
+
+    $pairs = [
+        ['user', $_POST],
+        ['text', $_POST],
+        ['photo', $_FILES]
+    ];
+    foreach ($pairs as $_ => $pair) {
+        [$key, $data] = $pair;
+        if (empty($data[$key])) {
+            return $invalid;
+        }
+    }
+
+    $user = $_POST['user'];
+    $text = $_POST['text'];
+    $photo = $_FILES['photo'];
+
+    if(!getimagesize($photo['tmp_name'])){
+        return $invalid;
+    }
+
+    return [True, $user, $text, $photo];
 }

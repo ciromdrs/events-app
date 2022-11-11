@@ -5,7 +5,10 @@ require_once("RESTTestCase.php");
 
 final class PostsTest extends RESTTestCase {
     function __construct() {
-        parent::__construct(['base_uri' => 'elm-photo-gallery-site-1/api/']);
+        parent::__construct([
+            'base_uri' => 'elm-photo-gallery-site-1/api/',
+            'http_errors' => false
+        ]);
     }
 
 
@@ -30,8 +33,15 @@ final class PostsTest extends RESTTestCase {
     }
 
 
+    function setUp(): void {
+        $this->user = 'user1';
+        $this->text = 'Hello!';
+        $this->photo = 'tests/sample_data/long-horizontal.png';
+    }
+
+
     function testDatabaseStartsEmpty(): void {
-        $params = ['query' => ['current_user' => 'user1']];
+        $params = ['query' => ['current_user' => $this->user]];
         $response = $this->client->get('posts', $params);
         $got = (string) $response->getBody();
         $this->assertEquals('[]', $got);
@@ -49,10 +59,10 @@ final class PostsTest extends RESTTestCase {
      * @depends testUploadedPhotosDirectoryStartsEmpty
      */
     function testPostStatusCreated() {
-        $user = 'user1';
-        $text = 'Hello!';
-        $photo = 'tests/sample_data/long-horizontal.png';
-        $response = $this->client->post('posts', postMultipart($user, $text, $photo));
+        $response = $this->client->post(
+            'posts',
+            postMultipart($this->user, $this->text, $this->photo)
+        );
         $got = $response->getStatusCode();
         $body = (string) $response->getBody();
         $this->assertEquals(201, $got, $body);
@@ -71,18 +81,19 @@ final class PostsTest extends RESTTestCase {
         return $matches['id'];
     }
 
+
     /**
      * @depends testLocationHeader
      */
     function testInsertedData($post_id) {
         $response = $this->client->get(
             "posts/$post_id",
-            ['query' => ['current_user' => 'user1']]
+            ['query' => ['current_user' => $this->user]]
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
         $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals('user1', $got['user']);
+        $this->assertEquals($this->user, $got['user']);
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
@@ -97,7 +108,7 @@ final class PostsTest extends RESTTestCase {
         $response = $this->client->post(
             "posts/$post_id/likes",
             ['form_params' => [
-                'user' => 'user1'
+                'user' => $this->user
             ]]
         );
         $got = $response->getStatusCode();
@@ -112,17 +123,18 @@ final class PostsTest extends RESTTestCase {
     function testLikedPostData($post_id) {
         $response = $this->client->get(
             "posts/$post_id",
-            ['query' => ['current_user' => 'user1']]
+            ['query' => ['current_user' => $this->user]]
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
         $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals('user1', $got['user']);
+        $this->assertEquals($this->user, $got['user']);
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(true, $got['liked_by_current_user']);
         return $post_id;
     }
+
 
     /**
      * @depends testLikedPostData
@@ -130,12 +142,13 @@ final class PostsTest extends RESTTestCase {
     function testDislikeStatusOk($post_id) {
         $response = $this->client->delete(
             "posts/$post_id/likes",
-            ['query' => ['user' => 'user1']]
+            ['query' => ['user' => $this->user]]
         );
         $got = $response->getStatusCode();
         $this->assertEquals(200, $got);
         return $post_id;
     }
+
 
     /**
      * @depends testDislikeStatusOk
@@ -143,15 +156,63 @@ final class PostsTest extends RESTTestCase {
     function testDislikedPostData($post_id) {
         $response = $this->client->get(
             "posts/$post_id",
-            ['query' => ['current_user' => 'user1']]
+            ['query' => ['current_user' => $this->user]]
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
         $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals('user1', $got['user']);
+        $this->assertEquals($this->user, $got['user']);
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
+    }
+
+
+    function testInsertStatus400MissingUser() {
+        $data = postMultipart('', $this->text, $this->photo);
+        unset($data['multipart'][0]);
+        $response = $this->client->post('posts', $data);
+        $got = $response->getStatusCode();
+        $this->assertEquals(400, $got);
+    }
+
+
+    function testInsertStatus400EmptyUser() {
+        $response = $this->client->post(
+            'posts',
+            postMultipart('', $this->text, $this->photo)
+        );
+        $got = $response->getStatusCode();
+        $this->assertEquals(400, $got);
+    }
+
+
+    function testInsertStatus400InvalidUser() {
+        // TODO: create approprate @dataProvider
+        $invalid_user_provider = [
+            '',
+            // 'invaliduser'
+        ];
+
+        foreach ($invalid_user_provider as $i => $invalid_user) {
+            $response = $this->client->post(
+                'posts',
+                postMultipart($invalid_user, $this->text, $this->photo)
+            );
+            $got = $response->getStatusCode();
+            $this->assertEquals(400, $got);
+        }
+    }
+
+
+    function testInsertStatus400InvalidFile() {
+        $photo = 'tests/sample_data/invalid-file.txt';
+        $response = $this->client->post(
+            'posts',
+            postMultipart($this->user, $this->text, $photo)
+        );
+        $got = $response->getStatusCode();
+        $this->assertEquals(400, $got);
     }
 }
 
