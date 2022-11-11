@@ -4740,6 +4740,12 @@ function _File_toUrl(blob)
 	});
 }
 
+var $author$project$Main$ChangedUrl = function (a) {
+	return {$: 'ChangedUrl', a: a};
+};
+var $author$project$Main$ClickedLink = function (a) {
+	return {$: 'ClickedLink', a: a};
+};
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
@@ -5528,9 +5534,10 @@ var $elm$core$Task$perform = F2(
 			$elm$core$Task$Perform(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
-var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Main$Loading = {$: 'Loading'};
-var $author$project$Main$GotPosts = function (a) {
+var $elm$browser$Browser$application = _Browser_application;
+var $author$project$Main$NotFound = {$: 'NotFound'};
+var $author$project$Feed$Loading = {$: 'Loading'};
+var $author$project$Feed$GotPosts = function (a) {
 	return {$: 'GotPosts', a: a};
 };
 var $elm$url$Url$Builder$Relative = {$: 'Relative'};
@@ -6362,7 +6369,7 @@ var $elm$http$Http$get = function (r) {
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Main$Post = F6(
+var $author$project$Feed$Post = F6(
 	function (id, user, text, created, likedByCurrentUser, imgUrl) {
 		return {created: created, id: id, imgUrl: imgUrl, likedByCurrentUser: likedByCurrentUser, text: text, user: user};
 	});
@@ -6378,7 +6385,7 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			decoder);
 	});
 var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$postDecoder = A3(
+var $author$project$Feed$postDecoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'imgUrl',
 	$elm$json$Json$Decode$string,
@@ -6402,7 +6409,7 @@ var $author$project$Main$postDecoder = A3(
 						$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 						'id',
 						$elm$json$Json$Decode$int,
-						$elm$json$Json$Decode$succeed($author$project$Main$Post)))))));
+						$elm$json$Json$Decode$succeed($author$project$Feed$Post)))))));
 var $elm$url$Url$Builder$QueryParameter = F2(
 	function (a, b) {
 		return {$: 'QueryParameter', a: a, b: b};
@@ -6415,13 +6422,13 @@ var $elm$url$Url$Builder$string = F2(
 			$elm$url$Url$percentEncode(key),
 			$elm$url$Url$percentEncode(value));
 	});
-var $author$project$Main$getRecentPostsCmd = function (model) {
+var $author$project$Feed$getRecentPostsCmd = function (model) {
 	return $elm$http$Http$get(
 		{
 			expect: A2(
 				$elm$http$Http$expectJson,
-				$author$project$Main$GotPosts,
-				$elm$json$Json$Decode$list($author$project$Main$postDecoder)),
+				$author$project$Feed$GotPosts,
+				$elm$json$Json$Decode$list($author$project$Feed$postDecoder)),
 			url: A4(
 				$elm$url$Url$Builder$custom,
 				$elm$url$Url$Builder$Relative,
@@ -6434,28 +6441,266 @@ var $author$project$Main$getRecentPostsCmd = function (model) {
 				$elm$core$Maybe$Nothing)
 		});
 };
-var $author$project$Main$init = function (flags) {
+var $author$project$Feed$init = function (flags) {
 	var model = {
 		debugText: '',
 		postFormData: {photo: $elm$core$Maybe$Nothing, text: ''},
 		posts: _List_Nil,
-		status: $author$project$Main$Loading,
+		status: $author$project$Feed$Loading,
 		user: 'default'
 	};
 	return _Utils_Tuple2(
 		model,
-		$author$project$Main$getRecentPostsCmd(model));
+		$author$project$Feed$getRecentPostsCmd(model));
 };
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$url$Url$Parser$State = F5(
+	function (visited, unvisited, params, frag, value) {
+		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var $elm$url$Url$Parser$getFirstMatch = function (states) {
+	getFirstMatch:
+	while (true) {
+		if (!states.b) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var state = states.a;
+			var rest = states.b;
+			var _v1 = state.unvisited;
+			if (!_v1.b) {
+				return $elm$core$Maybe$Just(state.value);
+			} else {
+				if ((_v1.a === '') && (!_v1.b.b)) {
+					return $elm$core$Maybe$Just(state.value);
+				} else {
+					var $temp$states = rest;
+					states = $temp$states;
+					continue getFirstMatch;
+				}
+			}
+		}
+	}
+};
+var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
+	if (!segments.b) {
+		return _List_Nil;
+	} else {
+		if ((segments.a === '') && (!segments.b.b)) {
+			return _List_Nil;
+		} else {
+			var segment = segments.a;
+			var rest = segments.b;
+			return A2(
+				$elm$core$List$cons,
+				segment,
+				$elm$url$Url$Parser$removeFinalEmpty(rest));
+		}
+	}
+};
+var $elm$url$Url$Parser$preparePath = function (path) {
+	var _v0 = A2($elm$core$String$split, '/', path);
+	if (_v0.b && (_v0.a === '')) {
+		var segments = _v0.b;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	} else {
+		var segments = _v0;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	}
+};
+var $elm$url$Url$Parser$addToParametersHelp = F2(
+	function (value, maybeList) {
+		if (maybeList.$ === 'Nothing') {
+			return $elm$core$Maybe$Just(
+				_List_fromArray(
+					[value]));
+		} else {
+			var list = maybeList.a;
+			return $elm$core$Maybe$Just(
+				A2($elm$core$List$cons, value, list));
+		}
+	});
+var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $elm$url$Url$Parser$addParam = F2(
+	function (segment, dict) {
+		var _v0 = A2($elm$core$String$split, '=', segment);
+		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
+			var rawKey = _v0.a;
+			var _v1 = _v0.b;
+			var rawValue = _v1.a;
+			var _v2 = $elm$url$Url$percentDecode(rawKey);
+			if (_v2.$ === 'Nothing') {
+				return dict;
+			} else {
+				var key = _v2.a;
+				var _v3 = $elm$url$Url$percentDecode(rawValue);
+				if (_v3.$ === 'Nothing') {
+					return dict;
+				} else {
+					var value = _v3.a;
+					return A3(
+						$elm$core$Dict$update,
+						key,
+						$elm$url$Url$Parser$addToParametersHelp(value),
+						dict);
+				}
+			}
+		} else {
+			return dict;
+		}
+	});
+var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
+	if (maybeQuery.$ === 'Nothing') {
+		return $elm$core$Dict$empty;
+	} else {
+		var qry = maybeQuery.a;
+		return A3(
+			$elm$core$List$foldr,
+			$elm$url$Url$Parser$addParam,
+			$elm$core$Dict$empty,
+			A2($elm$core$String$split, '&', qry));
+	}
+};
+var $elm$url$Url$Parser$parse = F2(
+	function (_v0, url) {
+		var parser = _v0.a;
+		return $elm$url$Url$Parser$getFirstMatch(
+			parser(
+				A5(
+					$elm$url$Url$Parser$State,
+					_List_Nil,
+					$elm$url$Url$Parser$preparePath(url.path),
+					$elm$url$Url$Parser$prepareQuery(url.query),
+					url.fragment,
+					$elm$core$Basics$identity)));
+	});
+var $author$project$Main$FeedRoute = {$: 'FeedRoute'};
+var $elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$mapState = F2(
+	function (func, _v0) {
+		var visited = _v0.visited;
+		var unvisited = _v0.unvisited;
+		var params = _v0.params;
+		var frag = _v0.frag;
+		var value = _v0.value;
+		return A5(
+			$elm$url$Url$Parser$State,
+			visited,
+			unvisited,
+			params,
+			frag,
+			func(value));
+	});
+var $elm$url$Url$Parser$map = F2(
+	function (subValue, _v0) {
+		var parseArg = _v0.a;
+		return $elm$url$Url$Parser$Parser(
+			function (_v1) {
+				var visited = _v1.visited;
+				var unvisited = _v1.unvisited;
+				var params = _v1.params;
+				var frag = _v1.frag;
+				var value = _v1.value;
+				return A2(
+					$elm$core$List$map,
+					$elm$url$Url$Parser$mapState(value),
+					parseArg(
+						A5($elm$url$Url$Parser$State, visited, unvisited, params, frag, subValue)));
+			});
+	});
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
+var $elm$url$Url$Parser$oneOf = function (parsers) {
+	return $elm$url$Url$Parser$Parser(
+		function (state) {
+			return A2(
+				$elm$core$List$concatMap,
+				function (_v0) {
+					var parser = _v0.a;
+					return parser(state);
+				},
+				parsers);
+		});
+};
+var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
+	function (state) {
+		return _List_fromArray(
+			[state]);
+	});
+var $author$project$Main$parser = $elm$url$Url$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2($elm$url$Url$Parser$map, $author$project$Main$FeedRoute, $elm$url$Url$Parser$top)
+		]));
+var $author$project$Main$FeedPage = function (a) {
+	return {$: 'FeedPage', a: a};
+};
+var $author$project$Main$GotFeedMsg = function (a) {
+	return {$: 'GotFeedMsg', a: a};
+};
+var $elm$core$Platform$Cmd$map = _Platform_map;
+var $author$project$Main$toFeed = F2(
+	function (model, _v0) {
+		var feedModel = _v0.a;
+		var cmd = _v0.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					page: $author$project$Main$FeedPage(feedModel)
+				}),
+			A2($elm$core$Platform$Cmd$map, $author$project$Main$GotFeedMsg, cmd));
+	});
+var $author$project$Main$updateUrl = F2(
+	function (url, model) {
+		var _v0 = A2($elm$url$Url$Parser$parse, $author$project$Main$parser, url);
+		if (_v0.$ === 'Just') {
+			var _v1 = _v0.a;
+			return A2(
+				$author$project$Main$toFeed,
+				model,
+				$author$project$Feed$init(_Utils_Tuple0));
+		} else {
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{page: $author$project$Main$NotFound}),
+				$elm$core$Platform$Cmd$none);
+		}
+	});
+var $author$project$Main$init = F3(
+	function (_v0, url, key) {
+		return A2(
+			$author$project$Main$updateUrl,
+			url,
+			{key: key, page: $author$project$Main$NotFound, url: url});
+	});
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $author$project$Main$ChangedPostPhoto = function (a) {
+var $author$project$Feed$ChangedPostPhoto = function (a) {
 	return {$: 'ChangedPostPhoto', a: a};
 };
-var $author$project$Main$Idle = {$: 'Idle'};
-var $author$project$Main$LikedDisliked = function (a) {
+var $author$project$Feed$Idle = {$: 'Idle'};
+var $author$project$Feed$LikedDisliked = function (a) {
 	return {$: 'LikedDisliked', a: a};
 };
-var $author$project$Main$Posted = function (a) {
+var $author$project$Feed$Posted = function (a) {
 	return {$: 'Posted', a: a};
 };
 var $elm$http$Http$expectString = function (toMsg) {
@@ -6482,15 +6727,13 @@ var $elm$http$Http$multipartBody = function (parts) {
 		'',
 		_Http_toFormData(parts));
 };
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$http$Http$post = function (r) {
 	return $elm$http$Http$request(
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $elm$http$Http$stringPart = _Http_pair;
 var $elm$core$Debug$toString = _Debug_toString;
-var $author$project$Main$update = F2(
+var $author$project$Feed$update = F2(
 	function (msg, model) {
 		var formData = model.postFormData;
 		switch (msg.$) {
@@ -6498,7 +6741,7 @@ var $author$project$Main$update = F2(
 				var result = msg.a;
 				var modelIdle = _Utils_update(
 					model,
-					{status: $author$project$Main$Idle});
+					{status: $author$project$Feed$Idle});
 				if (result.$ === 'Ok') {
 					var posts = result.a;
 					return _Utils_Tuple2(
@@ -6559,7 +6802,7 @@ var $author$project$Main$update = F2(
 						$elm$file$File$Select$file,
 						_List_fromArray(
 							['image/*']),
-						$author$project$Main$ChangedPostPhoto));
+						$author$project$Feed$ChangedPostPhoto));
 			case 'ClickedPost':
 				return _Utils_Tuple2(
 					model,
@@ -6576,7 +6819,7 @@ var $author$project$Main$update = F2(
 												A2($elm$http$Http$stringPart, 'text', model.postFormData.text),
 												A2($elm$http$Http$filePart, 'photo', photo)
 											])),
-									expect: $elm$http$Http$expectString($author$project$Main$Posted),
+									expect: $elm$http$Http$expectString($author$project$Feed$Posted),
 									url: 'api/posts'
 								});
 						} else {
@@ -6587,7 +6830,7 @@ var $author$project$Main$update = F2(
 				var result = msg.a;
 				var modelLoading = _Utils_update(
 					model,
-					{status: $author$project$Main$Loading});
+					{status: $author$project$Feed$Loading});
 				var newModel = function () {
 					if (result.$ === 'Ok') {
 						var value = result.a;
@@ -6609,7 +6852,7 @@ var $author$project$Main$update = F2(
 				}();
 				return _Utils_Tuple2(
 					newModel,
-					$author$project$Main$getRecentPostsCmd(newModel));
+					$author$project$Feed$getRecentPostsCmd(newModel));
 			case 'ClickedLike':
 				var post = msg.a;
 				return _Utils_Tuple2(
@@ -6621,7 +6864,7 @@ var $author$project$Main$update = F2(
 									[
 										A2($elm$http$Http$stringPart, 'user', model.user)
 									])),
-							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
+							expect: $elm$http$Http$expectString($author$project$Feed$LikedDisliked),
 							url: 'api/posts/' + ($elm$core$String$fromInt(post.id) + '/likes')
 						}));
 			case 'ClickedDislike':
@@ -6631,7 +6874,7 @@ var $author$project$Main$update = F2(
 					$elm$http$Http$request(
 						{
 							body: $elm$http$Http$emptyBody,
-							expect: $elm$http$Http$expectString($author$project$Main$LikedDisliked),
+							expect: $elm$http$Http$expectString($author$project$Feed$LikedDisliked),
 							headers: _List_Nil,
 							method: 'DELETE',
 							timeout: $elm$core$Maybe$Nothing,
@@ -6657,7 +6900,7 @@ var $author$project$Main$update = F2(
 				if (result.$ === 'Ok') {
 					return _Utils_Tuple2(
 						model,
-						$author$project$Main$getRecentPostsCmd(model));
+						$author$project$Feed$getRecentPostsCmd(model));
 				} else {
 					var errMessage = result.a;
 					return _Utils_Tuple2(
@@ -6671,13 +6914,75 @@ var $author$project$Main$update = F2(
 			default:
 				return _Utils_Tuple2(
 					model,
-					$author$project$Main$getRecentPostsCmd(model));
+					$author$project$Feed$getRecentPostsCmd(model));
 		}
 	});
-var $author$project$Main$ChangedUser = function (a) {
+var $author$project$Main$update = F2(
+	function (msg, model) {
+		var _v0 = _Utils_Tuple2(msg, model.page);
+		if ((_v0.a.$ === 'GotFeedMsg') && (_v0.b.$ === 'FeedPage')) {
+			var feedMsg = _v0.a.a;
+			var feedModel = _v0.b.a;
+			return A2(
+				$author$project$Main$toFeed,
+				model,
+				A2($author$project$Feed$update, feedMsg, feedModel));
+		} else {
+			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+		}
+	});
+var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
+var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$url$Url$addPort = F2(
+	function (maybePort, starter) {
+		if (maybePort.$ === 'Nothing') {
+			return starter;
+		} else {
+			var port_ = maybePort.a;
+			return starter + (':' + $elm$core$String$fromInt(port_));
+		}
+	});
+var $elm$url$Url$addPrefixed = F3(
+	function (prefix, maybeSegment, starter) {
+		if (maybeSegment.$ === 'Nothing') {
+			return starter;
+		} else {
+			var segment = maybeSegment.a;
+			return _Utils_ap(
+				starter,
+				_Utils_ap(prefix, segment));
+		}
+	});
+var $elm$url$Url$toString = function (url) {
+	var http = function () {
+		var _v0 = url.protocol;
+		if (_v0.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	return A3(
+		$elm$url$Url$addPrefixed,
+		'#',
+		url.fragment,
+		A3(
+			$elm$url$Url$addPrefixed,
+			'?',
+			url.query,
+			_Utils_ap(
+				A2(
+					$elm$url$Url$addPort,
+					url.port_,
+					_Utils_ap(http, url.host)),
+				url.path)));
+};
+var $author$project$Feed$ChangedUser = function (a) {
 	return {$: 'ChangedUser', a: a};
 };
-var $author$project$Main$ClickedChangeUser = {$: 'ClickedChangeUser'};
+var $author$project$Feed$ClickedChangeUser = {$: 'ClickedChangeUser'};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
@@ -6752,14 +7057,12 @@ var $elm$html$Html$Attributes$boolProperty = F2(
 	});
 var $elm$html$Html$Attributes$required = $elm$html$Html$Attributes$boolProperty('required');
 var $elm$html$Html$span = _VirtualDom_node('span');
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
-var $author$project$Main$ClickedDislike = function (a) {
+var $author$project$Feed$ClickedDislike = function (a) {
 	return {$: 'ClickedDislike', a: a};
 };
-var $author$project$Main$ClickedLike = function (a) {
+var $author$project$Feed$ClickedLike = function (a) {
 	return {$: 'ClickedLike', a: a};
 };
 var $elm$html$Html$img = _VirtualDom_node('img');
@@ -6769,7 +7072,7 @@ var $elm$html$Html$Attributes$src = function (url) {
 		'src',
 		_VirtualDom_noJavaScriptOrHtmlUri(url));
 };
-var $author$project$Main$viewPost = function (post) {
+var $author$project$Feed$viewPost = function (post) {
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -6823,17 +7126,17 @@ var $author$project$Main$viewPost = function (post) {
 						$elm$html$Html$Attributes$class(
 						post.likedByCurrentUser ? 'dislike-button' : 'like-button'),
 						post.likedByCurrentUser ? $elm$html$Html$Events$onClick(
-						$author$project$Main$ClickedDislike(post)) : $elm$html$Html$Events$onClick(
-						$author$project$Main$ClickedLike(post))
+						$author$project$Feed$ClickedDislike(post)) : $elm$html$Html$Events$onClick(
+						$author$project$Feed$ClickedLike(post))
 					]),
 				_List_Nil)
 			]));
 };
-var $author$project$Main$ChangedPostText = function (a) {
+var $author$project$Feed$ChangedPostText = function (a) {
 	return {$: 'ChangedPostText', a: a};
 };
-var $author$project$Main$ClickedPost = {$: 'ClickedPost'};
-var $author$project$Main$PickPhoto = {$: 'PickPhoto'};
+var $author$project$Feed$ClickedPost = {$: 'ClickedPost'};
+var $author$project$Feed$PickPhoto = {$: 'PickPhoto'};
 var $elm$file$File$name = _File_name;
 var $elm$html$Html$Attributes$rows = function (n) {
 	return A2(
@@ -6842,7 +7145,7 @@ var $elm$html$Html$Attributes$rows = function (n) {
 		$elm$core$String$fromInt(n));
 };
 var $elm$html$Html$textarea = _VirtualDom_node('textarea');
-var $author$project$Main$viewPostForm = function (model) {
+var $author$project$Feed$viewPostForm = function (model) {
 	var photo = function () {
 		var _v0 = model.postFormData.photo;
 		if (_v0.$ === 'Just') {
@@ -6871,7 +7174,7 @@ var $author$project$Main$viewPostForm = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$Attributes$class('small'),
-								$elm$html$Html$Events$onClick($author$project$Main$PickPhoto)
+								$elm$html$Html$Events$onClick($author$project$Feed$PickPhoto)
 							]),
 						_List_fromArray(
 							[
@@ -6898,7 +7201,7 @@ var $author$project$Main$viewPostForm = function (model) {
 								$elm$html$Html$Attributes$id('text'),
 								$elm$html$Html$Attributes$class('post-text-input post-form-input'),
 								$elm$html$Html$Attributes$rows(3),
-								$elm$html$Html$Events$onInput($author$project$Main$ChangedPostText),
+								$elm$html$Html$Events$onInput($author$project$Feed$ChangedPostText),
 								$elm$html$Html$Attributes$placeholder('Write something...'),
 								$elm$html$Html$Attributes$value(model.postFormData.text)
 							]),
@@ -6909,7 +7212,7 @@ var $author$project$Main$viewPostForm = function (model) {
 				$elm$html$Html$button,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onClick($author$project$Main$ClickedPost)
+						$elm$html$Html$Events$onClick($author$project$Feed$ClickedPost)
 					]),
 				_List_fromArray(
 					[
@@ -6917,7 +7220,7 @@ var $author$project$Main$viewPostForm = function (model) {
 					]))
 			]));
 };
-var $author$project$Main$view = function (model) {
+var $author$project$Feed$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
@@ -6949,7 +7252,7 @@ var $author$project$Main$view = function (model) {
 								$elm$html$Html$Attributes$id('user'),
 								$elm$html$Html$Attributes$name('user'),
 								$elm$html$Html$Attributes$class('post-form-input post-user'),
-								$elm$html$Html$Events$onInput($author$project$Main$ChangedUser),
+								$elm$html$Html$Events$onInput($author$project$Feed$ChangedUser),
 								$elm$html$Html$Attributes$placeholder('User'),
 								$elm$html$Html$Attributes$value(model.user),
 								$elm$html$Html$Attributes$required(true)
@@ -6959,7 +7262,7 @@ var $author$project$Main$view = function (model) {
 						$elm$html$Html$button,
 						_List_fromArray(
 							[
-								$elm$html$Html$Events$onClick($author$project$Main$ClickedChangeUser)
+								$elm$html$Html$Events$onClick($author$project$Feed$ClickedChangeUser)
 							]),
 						_List_fromArray(
 							[
@@ -6974,7 +7277,7 @@ var $author$project$Main$view = function (model) {
 					]),
 				_List_fromArray(
 					[
-						$author$project$Main$viewPostForm(model),
+						$author$project$Feed$viewPostForm(model),
 						A2(
 						$elm$html$Html$div,
 						_List_Nil,
@@ -6996,14 +7299,36 @@ var $author$project$Main$view = function (model) {
 									return _List_Nil;
 								}
 							}(),
-							A2($elm$core$List$map, $author$project$Main$viewPost, model.posts)))
+							A2($elm$core$List$map, $author$project$Feed$viewPost, model.posts)))
 					]))
 			]));
 };
-var $author$project$Main$main = $elm$browser$Browser$element(
+var $author$project$Main$view = function (model) {
+	var content = function () {
+		var _v0 = model.page;
+		if (_v0.$ === 'FeedPage') {
+			var feedModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$GotFeedMsg,
+				$author$project$Feed$view(feedModel));
+		} else {
+			return $elm$html$Html$text(
+				'Resource ' + ($elm$url$Url$toString(model.url) + ' not found'));
+		}
+	}();
+	return {
+		body: _List_fromArray(
+			[content]),
+		title: 'Events App'
+	};
+};
+var $author$project$Main$main = $elm$browser$Browser$application(
 	{
 		init: $author$project$Main$init,
-		subscriptions: function (model) {
+		onUrlChange: $author$project$Main$ChangedUrl,
+		onUrlRequest: $author$project$Main$ClickedLink,
+		subscriptions: function (_v0) {
 			return $elm$core$Platform$Sub$none;
 		},
 		update: $author$project$Main$update,

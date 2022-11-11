@@ -1,8 +1,8 @@
-module PhotoGalleryTests exposing (..)
+module FeedTests exposing (..)
 
 import Expect exposing (Expectation)
+import Feed exposing (Msg, Post, viewPost)
 import Fuzz exposing (Fuzzer, int, list, string)
-import Main exposing (Msg, Post, viewPost)
 import Test exposing (..)
 import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, tag, text)
