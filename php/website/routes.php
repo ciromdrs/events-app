@@ -9,4 +9,6 @@ post('/api/posts', 'api/posts.php');
 post('/api/posts/$post/likes', 'api/likes.php');
 delete('/api/posts/$post/likes', 'api/likes.php');
 
+post('/api/session', '/api/session.php');
+
 any('/404', '404.php');
