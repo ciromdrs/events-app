@@ -1,12 +1,10 @@
 body {
   font-family: Roboto, sans-serif;
+  background-color: #F0F0F0;
 }
 
-.main-content {
-    background-color: #FAFAFA;
-}
-
-.post-form-input {
+/* TODO: Refactor post form style */
+input {
     margin-top: 5px;
 }
 
@@ -78,12 +76,52 @@ button:hover {
     content: url('static/filled-heart.png');
 }
 
-.shadowed, button, .post {
-    --light-shadow: rgba(0, 0, 0, .05);
+.shadowed, button, .post, div.login-form {
+    --light-shadow: rgba(0, 0, 0, .15);
     box-shadow: 0px 6px 10px var(--light-shadow);
 }
 
-.shadowed:hover, button:hover, .post:hover {
-    --dark-shadow: rgba(0, 0, 0, .15);
+.shadowed:hover, button:hover, .post:hover, div.login-form:hover {
+    --dark-shadow: rgba(0, 0, 0, .25);
     box-shadow: 0px 6px 10px var(--dark-shadow);
+}
+
+
+div.login-form {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    min-width: 200px;
+    max-width: 300px;
+    height: 400px;
+
+    padding: 50px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    text-align: center;
+    word-break: break-all;
+
+    background-color: white;
+}
+
+div.login-form > span.url {
+    color: inherit;
+    font-weight: bold;
+}
+
+div.login-form > button {
+    width: auto;
+}
+
+div.login-form > span.error-message {
+    color: red;
+}
+
+div.login-form > :not(span.url) {
+    margin-top: 5px;
 }

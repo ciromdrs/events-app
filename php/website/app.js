@@ -4743,8 +4743,8 @@ function _File_toUrl(blob)
 var $author$project$Main$ChangedUrl = function (a) {
 	return {$: 'ChangedUrl', a: a};
 };
-var $author$project$Main$ClickedLink = function (a) {
-	return {$: 'ClickedLink', a: a};
+var $author$project$Main$RequestedUrl = function (a) {
+	return {$: 'RequestedUrl', a: a};
 };
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
@@ -6455,6 +6455,12 @@ var $author$project$Feed$init = function (flags) {
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $author$project$Users$init = F2(
+	function (_v0, redirectUrl) {
+		return _Utils_Tuple2(
+			{errMsg: '', password: '', redirectUrl: redirectUrl, token: $elm$core$Maybe$Nothing, username: ''},
+			$elm$core$Platform$Cmd$none);
+	});
 var $elm$url$Url$Parser$State = F5(
 	function (visited, unvisited, params, frag, value) {
 		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
@@ -6575,6 +6581,7 @@ var $elm$url$Url$Parser$parse = F2(
 					$elm$core$Basics$identity)));
 	});
 var $author$project$Main$FeedRoute = {$: 'FeedRoute'};
+var $author$project$Main$UsersRoute = {$: 'UsersRoute'};
 var $elm$url$Url$Parser$Parser = function (a) {
 	return {$: 'Parser', a: a};
 };
@@ -6638,6 +6645,32 @@ var $elm$url$Url$Parser$oneOf = function (parsers) {
 				parsers);
 		});
 };
+var $elm$url$Url$Parser$s = function (str) {
+	return $elm$url$Url$Parser$Parser(
+		function (_v0) {
+			var visited = _v0.visited;
+			var unvisited = _v0.unvisited;
+			var params = _v0.params;
+			var frag = _v0.frag;
+			var value = _v0.value;
+			if (!unvisited.b) {
+				return _List_Nil;
+			} else {
+				var next = unvisited.a;
+				var rest = unvisited.b;
+				return _Utils_eq(next, str) ? _List_fromArray(
+					[
+						A5(
+						$elm$url$Url$Parser$State,
+						A2($elm$core$List$cons, next, visited),
+						rest,
+						params,
+						frag,
+						value)
+					]) : _List_Nil;
+			}
+		});
+};
 var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
 	function (state) {
 		return _List_fromArray(
@@ -6646,7 +6679,15 @@ var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
 var $author$project$Main$parser = $elm$url$Url$Parser$oneOf(
 	_List_fromArray(
 		[
-			A2($elm$url$Url$Parser$map, $author$project$Main$FeedRoute, $elm$url$Url$Parser$top)
+			A2($elm$url$Url$Parser$map, $author$project$Main$FeedRoute, $elm$url$Url$Parser$top),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Main$FeedRoute,
+			$elm$url$Url$Parser$s('feed')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Main$UsersRoute,
+			$elm$url$Url$Parser$s('login'))
 		]));
 var $author$project$Main$FeedPage = function (a) {
 	return {$: 'FeedPage', a: a};
@@ -6667,21 +6708,47 @@ var $author$project$Main$toFeed = F2(
 				}),
 			A2($elm$core$Platform$Cmd$map, $author$project$Main$GotFeedMsg, cmd));
 	});
+var $author$project$Main$GotUsersMsg = function (a) {
+	return {$: 'GotUsersMsg', a: a};
+};
+var $author$project$Main$UsersPage = function (a) {
+	return {$: 'UsersPage', a: a};
+};
+var $author$project$Main$toUsers = F2(
+	function (model, _v0) {
+		var usersModel = _v0.a;
+		var cmd = _v0.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					page: $author$project$Main$UsersPage(usersModel)
+				}),
+			A2($elm$core$Platform$Cmd$map, $author$project$Main$GotUsersMsg, cmd));
+	});
 var $author$project$Main$updateUrl = F2(
 	function (url, model) {
 		var _v0 = A2($elm$url$Url$Parser$parse, $author$project$Main$parser, url);
-		if (_v0.$ === 'Just') {
-			var _v1 = _v0.a;
-			return A2(
-				$author$project$Main$toFeed,
-				model,
-				$author$project$Feed$init(_Utils_Tuple0));
-		} else {
+		if (_v0.$ === 'Nothing') {
 			return _Utils_Tuple2(
 				_Utils_update(
 					model,
 					{page: $author$project$Main$NotFound}),
 				$elm$core$Platform$Cmd$none);
+		} else {
+			if (_v0.a.$ === 'FeedRoute') {
+				var _v1 = _v0.a;
+				return A2(
+					$author$project$Main$toFeed,
+					model,
+					$author$project$Feed$init(_Utils_Tuple0));
+			} else {
+				var _v2 = _v0.a;
+				return A2(
+					$author$project$Main$toUsers,
+					model,
+					A2($author$project$Users$init, _Utils_Tuple0, model.url));
+			}
 		}
 	});
 var $author$project$Main$init = F3(
@@ -6689,10 +6756,58 @@ var $author$project$Main$init = F3(
 		return A2(
 			$author$project$Main$updateUrl,
 			url,
-			{key: key, page: $author$project$Main$NotFound, url: url});
+			{authToken: $elm$core$Maybe$Nothing, key: key, page: $author$project$Main$NotFound, url: url});
 	});
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$browser$Browser$Navigation$load = _Browser_load;
+var $elm$core$Debug$log = _Debug_log;
+var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $elm$core$Debug$toString = _Debug_toString;
+var $elm$url$Url$addPort = F2(
+	function (maybePort, starter) {
+		if (maybePort.$ === 'Nothing') {
+			return starter;
+		} else {
+			var port_ = maybePort.a;
+			return starter + (':' + $elm$core$String$fromInt(port_));
+		}
+	});
+var $elm$url$Url$addPrefixed = F3(
+	function (prefix, maybeSegment, starter) {
+		if (maybeSegment.$ === 'Nothing') {
+			return starter;
+		} else {
+			var segment = maybeSegment.a;
+			return _Utils_ap(
+				starter,
+				_Utils_ap(prefix, segment));
+		}
+	});
+var $elm$url$Url$toString = function (url) {
+	var http = function () {
+		var _v0 = url.protocol;
+		if (_v0.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	return A3(
+		$elm$url$Url$addPrefixed,
+		'#',
+		url.fragment,
+		A3(
+			$elm$url$Url$addPrefixed,
+			'?',
+			url.query,
+			_Utils_ap(
+				A2(
+					$elm$url$Url$addPort,
+					url.port_,
+					_Utils_ap(http, url.host)),
+				url.path)));
+};
 var $author$project$Feed$ChangedPostPhoto = function (a) {
 	return {$: 'ChangedPostPhoto', a: a};
 };
@@ -6732,7 +6847,6 @@ var $elm$http$Http$post = function (r) {
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $elm$http$Http$stringPart = _Http_pair;
-var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Feed$update = F2(
 	function (msg, model) {
 		var formData = model.postFormData;
@@ -6917,74 +7031,196 @@ var $author$project$Feed$update = F2(
 					$author$project$Feed$getRecentPostsCmd(model));
 		}
 	});
+var $author$project$Users$Authenticated = F2(
+	function (a, b) {
+		return {$: 'Authenticated', a: a, b: b};
+	});
+var $author$project$Users$ReceivedResponse = function (a) {
+	return {$: 'ReceivedResponse', a: a};
+};
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
+var $author$project$Users$trigger = function (msg) {
+	return A2(
+		$elm$core$Task$perform,
+		$elm$core$Basics$identity,
+		$elm$core$Task$succeed(msg));
+};
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Users$userEncoder = F2(
+	function (username, password) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'username',
+					$elm$json$Json$Encode$string(username)),
+					_Utils_Tuple2(
+					'password',
+					$elm$json$Json$Encode$string(password))
+				]));
+	});
+var $author$project$Users$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'ChangedUsername':
+				var _new = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{username: _new}),
+					$elm$core$Platform$Cmd$none);
+			case 'ChangedPassword':
+				var _new = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{password: _new}),
+					$elm$core$Platform$Cmd$none);
+			case 'ClickedLogin':
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{password: ''}),
+					$elm$http$Http$post(
+						{
+							body: $elm$http$Http$jsonBody(
+								A2($author$project$Users$userEncoder, model.username, model.password)),
+							expect: $elm$http$Http$expectString($author$project$Users$ReceivedResponse),
+							url: 'api/session'
+						}));
+			case 'ReceivedResponse':
+				var result = msg.a;
+				var cleanModel = _Utils_update(
+					model,
+					{password: '', token: $elm$core$Maybe$Nothing});
+				if (result.$ === 'Ok') {
+					var tokenStr = result.a;
+					return _Utils_Tuple2(
+						cleanModel,
+						$author$project$Users$trigger(
+							A2($author$project$Users$Authenticated, tokenStr, model.redirectUrl)));
+				} else {
+					var err = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							cleanModel,
+							{
+								errMsg: $elm$core$Debug$toString(err)
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			default:
+				var token = msg.a;
+				var redirectUrl = msg.b;
+				return A2(
+					$elm$core$Debug$log,
+					'This message should have been intercepted',
+					_Utils_Tuple2(model, $elm$core$Platform$Cmd$none));
+		}
+	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
-		var _v0 = _Utils_Tuple2(msg, model.page);
-		if ((_v0.a.$ === 'GotFeedMsg') && (_v0.b.$ === 'FeedPage')) {
-			var feedMsg = _v0.a.a;
-			var feedModel = _v0.b.a;
+		var redirectTo = F2(
+			function (newModel, url) {
+				return _Utils_Tuple2(
+					newModel,
+					A2($elm$browser$Browser$Navigation$pushUrl, newModel.key, url));
+			});
+		var logIgnoredMessage = function (ignoredMsg) {
 			return A2(
-				$author$project$Main$toFeed,
-				model,
-				A2($author$project$Feed$update, feedMsg, feedModel));
-		} else {
-			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				$elm$core$Debug$log,
+				'Ignored message: ' + $elm$core$Debug$toString(ignoredMsg),
+				_Utils_Tuple2(model, $elm$core$Platform$Cmd$none));
+		};
+		var _v0 = _Utils_Tuple2(msg, model.page);
+		switch (_v0.a.$) {
+			case 'ChangedUrl':
+				var url = _v0.a.a;
+				return A2($author$project$Main$updateUrl, url, model);
+			case 'RequestedUrl':
+				var urlRequest = _v0.a.a;
+				if (urlRequest.$ === 'External') {
+					var href = urlRequest.a;
+					return _Utils_Tuple2(
+						model,
+						$elm$browser$Browser$Navigation$load(href));
+				} else {
+					var url = urlRequest.a;
+					return A2(
+						redirectTo,
+						model,
+						$elm$url$Url$toString(url));
+				}
+			case 'GotFeedMsg':
+				if (_v0.b.$ === 'FeedPage') {
+					var feedMsg = _v0.a.a;
+					var feedModel = _v0.b.a;
+					return A2(
+						$author$project$Main$toFeed,
+						model,
+						A2($author$project$Feed$update, feedMsg, feedModel));
+				} else {
+					return logIgnoredMessage($author$project$Main$GotFeedMsg);
+				}
+			default:
+				if (_v0.b.$ === 'UsersPage') {
+					if (_v0.a.a.$ === 'Authenticated') {
+						var _v2 = _v0.a.a;
+						var token = _v2.a;
+						var redirectUrl = _v2.b;
+						var usersModel = _v0.b.a;
+						var modelWithToken = _Utils_update(
+							model,
+							{
+								authToken: $elm$core$Maybe$Just(token)
+							});
+						var _v3 = A2($elm$url$Url$Parser$parse, $author$project$Main$parser, redirectUrl);
+						if ((_v3.$ === 'Just') && (_v3.a.$ === 'UsersRoute')) {
+							var _v4 = _v3.a;
+							return A2(redirectTo, modelWithToken, 'feed');
+						} else {
+							return A2($author$project$Main$updateUrl, redirectUrl, modelWithToken);
+						}
+					} else {
+						var usersMsg = _v0.a.a;
+						var usersModel = _v0.b.a;
+						return A2(
+							$author$project$Main$toUsers,
+							model,
+							A2($author$project$Users$update, usersMsg, usersModel));
+					}
+				} else {
+					return logIgnoredMessage($author$project$Main$GotUsersMsg);
+				}
 		}
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $elm$url$Url$addPort = F2(
-	function (maybePort, starter) {
-		if (maybePort.$ === 'Nothing') {
-			return starter;
-		} else {
-			var port_ = maybePort.a;
-			return starter + (':' + $elm$core$String$fromInt(port_));
-		}
-	});
-var $elm$url$Url$addPrefixed = F3(
-	function (prefix, maybeSegment, starter) {
-		if (maybeSegment.$ === 'Nothing') {
-			return starter;
-		} else {
-			var segment = maybeSegment.a;
-			return _Utils_ap(
-				starter,
-				_Utils_ap(prefix, segment));
-		}
-	});
-var $elm$url$Url$toString = function (url) {
-	var http = function () {
-		var _v0 = url.protocol;
-		if (_v0.$ === 'Http') {
-			return 'http://';
-		} else {
-			return 'https://';
-		}
-	}();
-	return A3(
-		$elm$url$Url$addPrefixed,
-		'#',
-		url.fragment,
-		A3(
-			$elm$url$Url$addPrefixed,
-			'?',
-			url.query,
-			_Utils_ap(
-				A2(
-					$elm$url$Url$addPort,
-					url.port_,
-					_Utils_ap(http, url.host)),
-				url.path)));
-};
 var $author$project$Feed$ChangedUser = function (a) {
 	return {$: 'ChangedUser', a: a};
 };
 var $author$project$Feed$ClickedChangeUser = {$: 'ClickedChangeUser'};
 var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -7303,18 +7539,102 @@ var $author$project$Feed$view = function (model) {
 					]))
 			]));
 };
+var $author$project$Users$ChangedPassword = function (a) {
+	return {$: 'ChangedPassword', a: a};
+};
+var $author$project$Users$ChangedUsername = function (a) {
+	return {$: 'ChangedUsername', a: a};
+};
+var $author$project$Users$ClickedLogin = {$: 'ClickedLogin'};
+var $author$project$Users$view = function (model) {
+	var errorMsg = $elm$core$String$isEmpty(model.errMsg) ? _List_Nil : _List_fromArray(
+		[
+			A2(
+			$elm$html$Html$span,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('error-message')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(model.errMsg)
+				]))
+		]);
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('login-form')
+			]),
+		_Utils_ap(
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Log in to proceed to'),
+					A2(
+					$elm$html$Html$span,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$class('url')
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							$elm$url$Url$toString(model.redirectUrl))
+						]))
+				]),
+			_Utils_ap(
+				errorMsg,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$placeholder('Username'),
+								$elm$html$Html$Events$onInput($author$project$Users$ChangedUsername)
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('password'),
+								$elm$html$Html$Attributes$placeholder('Password'),
+								$elm$html$Html$Events$onInput($author$project$Users$ChangedPassword)
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('login-button'),
+								$elm$html$Html$Events$onClick($author$project$Users$ClickedLogin)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Log In')
+							]))
+					]))));
+};
 var $author$project$Main$view = function (model) {
 	var content = function () {
 		var _v0 = model.page;
-		if (_v0.$ === 'FeedPage') {
-			var feedModel = _v0.a;
-			return A2(
-				$elm$html$Html$map,
-				$author$project$Main$GotFeedMsg,
-				$author$project$Feed$view(feedModel));
-		} else {
-			return $elm$html$Html$text(
-				'Resource ' + ($elm$url$Url$toString(model.url) + ' not found'));
+		switch (_v0.$) {
+			case 'NotFound':
+				return $elm$html$Html$text(
+					'Resource ' + ($elm$url$Url$toString(model.url) + ' not found'));
+			case 'FeedPage':
+				var feedModel = _v0.a;
+				return A2(
+					$elm$html$Html$map,
+					$author$project$Main$GotFeedMsg,
+					$author$project$Feed$view(feedModel));
+			default:
+				var usersModel = _v0.a;
+				return A2(
+					$elm$html$Html$map,
+					$author$project$Main$GotUsersMsg,
+					$author$project$Users$view(usersModel));
 		}
 	}();
 	return {
@@ -7327,7 +7647,7 @@ var $author$project$Main$main = $elm$browser$Browser$application(
 	{
 		init: $author$project$Main$init,
 		onUrlChange: $author$project$Main$ChangedUrl,
-		onUrlRequest: $author$project$Main$ClickedLink,
+		onUrlRequest: $author$project$Main$RequestedUrl,
 		subscriptions: function (_v0) {
 			return $elm$core$Platform$Sub$none;
 		},
