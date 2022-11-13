@@ -3,7 +3,7 @@ use GuzzleHttp\Psr7;
 
 require_once("RESTTestCase.php");
 
-final class LoginTest extends RESTTestCase {
+final class SessionTest extends RESTTestCase {
     function __construct() {
         parent::__construct([
             'base_uri' => 'elm-photo-gallery-site-1/api/',
