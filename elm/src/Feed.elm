@@ -246,7 +246,7 @@ view model =
                 [ type_ "text"
                 , id "user"
                 , name "user"
-                , class "post-form-input post-user"
+                , class "user"
                 , onInput ChangedUser
                 , placeholder "User"
                 , value model.user
@@ -255,7 +255,7 @@ view model =
                 []
             , button [ onClick ClickedChangeUser ] [ text "Change User" ]
             ]
-        , main_ [ class "main-content" ]
+        , main_ []
             [ viewPostForm model
             , div
                 []
@@ -276,8 +276,8 @@ viewPost : Post -> Html Msg
 viewPost post =
     div [ class "post" ]
         [ img [ class "post-image", src post.imgUrl ] []
-        , span [ class "post-user" ] [ text post.user ]
-        , span [ class "post-date" ] [ text (" on " ++ post.created) ]
+        , span [ class "user" ] [ text post.user ]
+        , span [ class "date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]
         , img
             [ class
@@ -311,7 +311,7 @@ viewPostForm model =
                 Nothing ->
                     ""
     in
-    div [ class "post" ]
+    div [ class "form post" ]
         [ div
             []
             [ button [ class "small", onClick PickPhoto ] [ text "Select Photo" ]
@@ -321,7 +321,6 @@ viewPostForm model =
         , div []
             [ textarea
                 [ id "text"
-                , class "post-text-input post-form-input"
                 , rows 3
                 , onInput ChangedPostText
                 , placeholder "Write something..."

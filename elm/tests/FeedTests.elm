@@ -29,13 +29,13 @@ testViewPost =
             [ tag "img", class "post-image" ]
         , testRenderPostField "user field"
             post
-            [ tag "div", class "post-user", text "user1" ]
+            [ tag "div", class "user", text "user1" ]
         , testRenderPostField "text field"
             post
             [ tag "div", class "post-text", text "some text..." ]
         , testRenderPostField "created field"
             post
-            [ tag "span", class "post-date", text "2022-11-04 23:53:22" ]
+            [ tag "span", class "date", text "2022-11-04 23:53:22" ]
         , testRenderPostField "like button"
             post
             [ tag "img", class "like-button" ]

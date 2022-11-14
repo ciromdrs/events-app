@@ -7329,7 +7329,7 @@ var $author$project$Feed$viewPost = function (post) {
 				$elm$html$Html$span,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class('post-user')
+						$elm$html$Html$Attributes$class('user')
 					]),
 				_List_fromArray(
 					[
@@ -7339,7 +7339,7 @@ var $author$project$Feed$viewPost = function (post) {
 				$elm$html$Html$span,
 				_List_fromArray(
 					[
-						$elm$html$Html$Attributes$class('post-date')
+						$elm$html$Html$Attributes$class('date')
 					]),
 				_List_fromArray(
 					[
@@ -7396,7 +7396,7 @@ var $author$project$Feed$viewPostForm = function (model) {
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('post')
+				$elm$html$Html$Attributes$class('form post')
 			]),
 		_List_fromArray(
 			[
@@ -7435,7 +7435,6 @@ var $author$project$Feed$viewPostForm = function (model) {
 						_List_fromArray(
 							[
 								$elm$html$Html$Attributes$id('text'),
-								$elm$html$Html$Attributes$class('post-text-input post-form-input'),
 								$elm$html$Html$Attributes$rows(3),
 								$elm$html$Html$Events$onInput($author$project$Feed$ChangedPostText),
 								$elm$html$Html$Attributes$placeholder('Write something...'),
@@ -7487,7 +7486,7 @@ var $author$project$Feed$view = function (model) {
 								$elm$html$Html$Attributes$type_('text'),
 								$elm$html$Html$Attributes$id('user'),
 								$elm$html$Html$Attributes$name('user'),
-								$elm$html$Html$Attributes$class('post-form-input post-user'),
+								$elm$html$Html$Attributes$class('user'),
 								$elm$html$Html$Events$onInput($author$project$Feed$ChangedUser),
 								$elm$html$Html$Attributes$placeholder('User'),
 								$elm$html$Html$Attributes$value(model.user),
@@ -7507,10 +7506,7 @@ var $author$project$Feed$view = function (model) {
 					])),
 				A2(
 				$elm$html$Html$main_,
-				_List_fromArray(
-					[
-						$elm$html$Html$Attributes$class('main-content')
-					]),
+				_List_Nil,
 				_List_fromArray(
 					[
 						$author$project$Feed$viewPostForm(model),
@@ -7564,7 +7560,7 @@ var $author$project$Users$view = function (model) {
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('login-form')
+				$elm$html$Html$Attributes$class('login-form form')
 			]),
 		_Utils_ap(
 			_List_fromArray(

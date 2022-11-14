@@ -3,34 +3,39 @@ body {
   background-color: #F0F0F0;
 }
 
-/* TODO: Refactor post form style */
-input {
+
+.form :not(div) {
     margin-top: 5px;
 }
 
-textarea.post-form-input {
+
+.post textarea {
     width: 100%;
     width: -moz-available;          /* For Mozilla */
     width: -webkit-fill-available;  /* For Chrome */
     width: stretch;                 /* Unprefixed */
 }
 
-.post-user {
+
+.post .user {
     font-weight: bold;
 }
 
-.post-date {
+
+.post .date {
     color: #999;
     font-size: small;
 }
 
-.post-image {
+
+.post .post-image {
     min-height: 150px;
     max-height: 700px;
     width: 100%;
 }
 
-.post {
+
+div.post {
     max-width: 600px;
     min-width: 250px;
     height: auto;
@@ -52,6 +57,7 @@ button {
     padding: 7px;
 }
 
+
 button.small {
     text-transform: none;
     border: none;
@@ -59,27 +65,33 @@ button.small {
     padding: 5px;
 }
 
+
 button:hover {
     background-color: #d7d7d7;
 }
 
-.like-button, .dislike-button {
+
+.post .like-button, .post .dislike-button {
     margin: 5px;
     width: 25px;
 }
 
-.like-button {
+
+.post .like-button {
     content: url('static/empty-heart.png');
 }
 
-.dislike-button {
+
+.post .dislike-button {
     content: url('static/filled-heart.png');
 }
+
 
 .shadowed, button, .post, div.login-form {
     --light-shadow: rgba(0, 0, 0, .15);
     box-shadow: 0px 6px 10px var(--light-shadow);
 }
+
 
 .shadowed:hover, button:hover, .post:hover, div.login-form:hover {
     --dark-shadow: rgba(0, 0, 0, .25);
@@ -109,19 +121,23 @@ div.login-form {
     background-color: white;
 }
 
-div.login-form > span.url {
+
+div.login-form span.url {
     color: inherit;
     font-weight: bold;
 }
 
-div.login-form > button {
+
+div.login-form button {
     width: auto;
 }
 
-div.login-form > span.error-message {
+
+div.login-form span.error-message {
     color: red;
 }
 
-div.login-form > :not(span.url) {
-    margin-top: 5px;
+
+div.login-form span.url {
+    margin-top: 0px;
 }

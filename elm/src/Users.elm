@@ -121,7 +121,7 @@ view model =
             else
                 [ span [ class "error-message" ] [ text model.errMsg ] ]
     in
-    div [ class "login-form" ]
+    div [ class "login-form form" ]
         ([ text "Log in to proceed to"
          , span [ class "url" ] [ text (Url.toString model.redirectUrl) ]
          ]
