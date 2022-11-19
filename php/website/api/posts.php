@@ -84,7 +84,6 @@ function validateInput() {
 
     $pairs = [
         ['user', $_POST],
-        ['text', $_POST],
         ['photo', $_FILES]
     ];
     foreach ($pairs as $_ => $pair) {
@@ -92,6 +91,10 @@ function validateInput() {
         if (empty($data[$key])) {
             return $invalid;
         }
+    }
+
+    if (!isset($_POST['text'])) {
+        return $invalid;
     }
 
     $user = $_POST['user'];
