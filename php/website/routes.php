@@ -11,4 +11,6 @@ delete('/api/posts/$post/likes', 'api/likes.php');
 
 post('/api/session', '/api/session.php');
 
+get('/api/uploaded_photos/$image', 'api/images.php');
+
 any('/404', '404.php');

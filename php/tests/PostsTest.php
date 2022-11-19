@@ -24,7 +24,7 @@ final class PostsTest extends RESTTestCase {
         $sth->execute();
 
         // Clear uploaded photos directory
-        $files = glob('html/uploaded_photos/*');
+        $files = glob('uploaded_photos/*');
         foreach($files as $file) {
             if(is_file($file)) {
                 unlink($file); // delete file
@@ -49,7 +49,8 @@ final class PostsTest extends RESTTestCase {
 
 
     function testUploadedPhotosDirectoryStartsEmpty(): void {
-        $files = glob('html/uploaded_photos/*');
+        $this->assertTrue(is_dir('uploaded_photos/'));
+        $files = glob('uploaded_photos/*');
         $this->assertEquals(0, count($files));
     }
 
@@ -85,7 +86,7 @@ final class PostsTest extends RESTTestCase {
     /**
      * @depends testLocationHeader
      */
-    function testInsertedData($post_id) {
+    function testFind($post_id) {
         $response = $this->client->get(
             "posts/$post_id",
             ['query' => ['current_user' => $this->user]]
@@ -97,12 +98,21 @@ final class PostsTest extends RESTTestCase {
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
+
+        // TODO: Test the image content
+        $img_url = $got['img_url'];
+        $img_url = substr($img_url, 4); // Remove duplicated 'api/'
+        $response = $this->client->get($img_url);
+        $body = (string) $response->getBody();
+        $this->assertNotEquals(404, $response->getStatusCode(), $img_url);
+        $this->assertStringNotContainsString('Not Found', $body);
+
         return $post_id;
     }
 
 
     /**
-     * @depends testInsertedData
+     * @depends testFind
      */
     function testLikeStatusCreated($post_id) {
         $response = $this->client->post(

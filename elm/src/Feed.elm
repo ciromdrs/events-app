@@ -343,4 +343,4 @@ postDecoder =
         |> required "text" string
         |> required "created" string
         |> required "liked_by_current_user" bool
-        |> required "imgUrl" string
+        |> required "img_url" string

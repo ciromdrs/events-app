@@ -28,7 +28,7 @@ print_r($response);
 
 function findAll($connection, $current_user) {
     $qry = "
-        SELECT id, posts.user, text, created, CONCAT(\"uploaded_photos/\",SHA1(image)) as imgUrl, SUM(likes.user = :current_user) as liked_by_current_user
+        SELECT id, posts.user, text, created, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url, SUM(likes.user = :current_user) as liked_by_current_user
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
         GROUP BY posts.id
@@ -48,7 +48,7 @@ function findAll($connection, $current_user) {
 
 function find($connection, $id, $current_user) {
     $qry = "
-        SELECT posts.*, SUM((likes.user = :current_user)) as liked_by_current_user
+        SELECT posts.*, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url, SUM((likes.user = :current_user)) as liked_by_current_user
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
         WHERE posts.id=:id
@@ -67,7 +67,8 @@ function insert($user, $text, $photo) {
     $sth->execute();
     $image = $dbh->lastInsertId();
     $filename = sha1($image);
-    move_uploaded_file($photo['tmp_name'], "uploaded_photos/$filename");
+
+    move_uploaded_file($photo['tmp_name'], "../uploaded_photos/$filename");
 
     $qry = 'INSERT INTO posts (user, text, image) VALUES (:user, :text, :image);';
     $sth = $dbh->prepare($qry);
@@ -97,6 +98,8 @@ function validateInput() {
     $text = $_POST['text'];
     $photo = $_FILES['photo'];
 
+    // TODO: Use FileInfo to check if the image is valid
+    // https://www.php.net/manual/en/book.fileinfo.php
     if(!getimagesize($photo['tmp_name'])){
         return $invalid;
     }
