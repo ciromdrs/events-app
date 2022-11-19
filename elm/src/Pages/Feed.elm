@@ -1,44 +1,51 @@
-module Feed exposing (..)
+module Pages.Feed exposing (Model, Msg, page)
 
+import Auth
 import Browser
 import File exposing (File)
 import File.Select as Select
+import Gen.Params.Feed exposing (Params)
 import Html exposing (Html, button, div, img, input, main_, span, text, textarea)
 import Html.Attributes exposing (class, id, name, placeholder, rows, src, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
+import Page
+import Request exposing (Request)
+import Shared
+import UI
 import Url.Builder exposing (Root(..), custom)
+import View exposing (View)
 
 
 
 -- MAIN
 
 
-main : Program () Model Msg
-main =
-    Browser.element
-        { init = init
-        , update = update
-        , view = view
-        , subscriptions = \model -> Sub.none
-        }
+page : Shared.Model -> Request -> Page.With Model Msg
+page shared _ =
+    Page.protected.element <|
+        \user ->
+            { init = init user
+            , update = update user
+            , view = view user
+            , subscriptions = \_ -> Sub.none
+            }
 
 
-init : () -> ( Model, Cmd Msg )
-init flags =
+init : Auth.User -> ( Model, Cmd Msg )
+init user =
     let
         model =
             { debugText = ""
             , status = Loading
             , posts = []
-            , user = "default"
             , postFormData = { text = "", photo = Nothing }
             }
     in
     ( model
-    , getRecentPostsCmd model
+    , getRecentPostsCmd user
     )
 
 
@@ -49,7 +56,6 @@ init flags =
 type alias Model =
     { debugText : String
     , status : Status
-    , user : String
     , posts : List Post
     , postFormData : { text : String, photo : Maybe File }
     }
@@ -79,17 +85,15 @@ type Msg
     | ClickedPost
     | Posted (Result Http.Error String)
     | ChangedPostText String
-    | ChangedUser String
     | ChangedPostPhoto File
     | PickPhoto
     | ClickedLike Post
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
-    | ClickedChangeUser
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update : Auth.User -> Msg -> Model -> ( Model, Cmd Msg )
+update user msg model =
     let
         formData =
             model.postFormData
@@ -111,9 +115,6 @@ update msg model =
 
                         _ ->
                             ( { modelIdle | debugText = "Unknown error" }, Cmd.none )
-
-        ChangedUser new ->
-            ( { model | user = new }, Cmd.none )
 
         ChangedPostText new ->
             let
@@ -142,7 +143,7 @@ update msg model =
                         { url = "api/posts"
                         , body =
                             Http.multipartBody
-                                [ Http.stringPart "user" model.user
+                                [ Http.stringPart "user" user.name
                                 , Http.stringPart "text" model.postFormData.text
                                 , Http.filePart "photo" photo
                                 ]
@@ -150,7 +151,7 @@ update msg model =
                         }
 
                 Nothing ->
-                    -- Show 'required' message
+                    -- TODO: Show 'required' message
                     Cmd.none
             )
 
@@ -172,9 +173,14 @@ update msg model =
                             { modelLoading | postFormData = clearFields }
 
                         Err error ->
-                            { modelLoading | debugText = Debug.toString result }
+                            let
+                                debugText =
+                                    "An error occurred: "
+                                        ++ httpErrToString error
+                            in
+                            { modelLoading | debugText = debugText }
             in
-            ( newModel, getRecentPostsCmd newModel )
+            ( newModel, getRecentPostsCmd user )
 
         ClickedLike post ->
             ( model
@@ -182,7 +188,7 @@ update msg model =
                 { url = "api/posts/" ++ String.fromInt post.id ++ "/likes"
                 , body =
                     Http.multipartBody
-                        [ Http.stringPart "user" model.user
+                        [ Http.stringPart "user" user.name
                         ]
                 , expect = Http.expectString LikedDisliked
                 }
@@ -196,7 +202,7 @@ update msg model =
                 , url =
                     custom Relative
                         [ "api", "posts", String.fromInt post.id, "likes" ]
-                        [ Url.Builder.string "user" model.user
+                        [ Url.Builder.string "user" user.name
                         ]
                         Nothing
                 , body = Http.emptyBody
@@ -209,25 +215,40 @@ update msg model =
         LikedDisliked result ->
             case result of
                 Ok _ ->
-                    ( model, getRecentPostsCmd model )
+                    ( model, getRecentPostsCmd user )
 
-                Err errMessage ->
-                    ( { model | debugText = Debug.toString errMessage }, Cmd.none )
-
-        ClickedChangeUser ->
-            -- model is up-to-date, just reloads recent posts
-            ( model
-            , getRecentPostsCmd model
-            )
+                Err err ->
+                    ( { model | debugText = httpErrToString err }, Cmd.none )
 
 
-getRecentPostsCmd : Model -> Cmd Msg
-getRecentPostsCmd model =
+httpErrToString : Http.Error -> String
+httpErrToString err =
+    case err of
+        Http.Timeout ->
+            "Timeout"
+
+        Http.NetworkError ->
+            "Network Error"
+
+        Http.BadBody _ ->
+            "BadBody"
+
+        Http.BadStatus code ->
+            "Bad Status ("
+                ++ String.fromInt code
+                ++ ")"
+
+        Http.BadUrl _ ->
+            "Bad Url"
+
+
+getRecentPostsCmd : Auth.User -> Cmd Msg
+getRecentPostsCmd user =
     Http.get
         { url =
             custom Relative
                 [ "api", "posts" ]
-                [ Url.Builder.string "current_user" model.user ]
+                [ Url.Builder.string "current_user" user.name ]
                 Nothing
         , expect = Http.expectJson GotPosts (list postDecoder)
         }
@@ -237,39 +258,27 @@ getRecentPostsCmd model =
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
-    div []
-        [ div [] [ span [] [ text model.debugText ] ]
-        , div []
-            [ input
-                [ type_ "text"
-                , id "user"
-                , name "user"
-                , class "user"
-                , onInput ChangedUser
-                , placeholder "User"
-                , value model.user
-                , Html.Attributes.required True
-                ]
-                []
-            , button [ onClick ClickedChangeUser ] [ text "Change User" ]
-            ]
-        , main_ []
-            [ viewPostForm model
-            , div
-                []
-                ((case model.status of
-                    Loading ->
-                        [ div [] [ text "Loading recent posts..." ] ]
+view : Auth.User -> Model -> View Msg
+view user model =
+    { title = "Feed"
+    , body =
+        UI.layout
+            [ div [] [ span [] [ text model.debugText ] ]
+            , main_ []
+                [ viewPostForm model
+                , div
+                    []
+                    (case model.status of
+                        Loading ->
+                            [ div [] [ text "Loading recent posts..." ] ]
 
-                    _ ->
-                        []
-                 )
-                    ++ List.map viewPost model.posts
-                )
+                        _ ->
+                            []
+                                ++ List.map viewPost model.posts
+                    )
+                ]
             ]
-        ]
+    }
 
 
 viewPost : Post -> Html Msg

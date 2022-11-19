@@ -2,4 +2,4 @@ RewriteEngine On
 
 RewriteRule ^api/.*$ routes.php [QSA,L]
 
-FallbackResource /index.html
+FallbackResource /static/index.html
