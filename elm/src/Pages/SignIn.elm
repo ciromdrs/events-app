@@ -4,6 +4,7 @@ import Gen.Params.SignIn exposing (Params)
 import Html
 import Html.Attributes as Attr
 import Html.Events as Events
+import Http
 import Page
 import Request
 import Shared
@@ -46,6 +47,7 @@ init =
 type Msg
     = ChangedName String
     | SubmittedSignInForm
+    | SignInResponse (Result Http.Error String)
 
 
 update : Storage -> Msg -> Model -> ( Model, Cmd Msg )
@@ -58,8 +60,26 @@ update storage msg model =
 
         SubmittedSignInForm ->
             ( model
-            , Storage.signIn { name = model.name } storage
+            , Http.post
+                { url = "/api/session"
+                , body =
+                    Http.multipartBody
+                        [ Http.stringPart "username" model.name ]
+                , expect = Http.expectString SignInResponse
+                }
             )
+
+        SignInResponse result ->
+            case result of
+                Err err ->
+                    -- TODO: Show error message
+                    ( model, Cmd.none )
+
+                Ok token ->
+                    -- TODO: Store token
+                    ( model
+                    , Storage.signIn { name = model.name } storage
+                    )
 
 
 
