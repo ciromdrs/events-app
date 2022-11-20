@@ -1,4 +1,4 @@
-module Pages.Feed exposing (Model, Msg, page)
+module Pages.Feed exposing (Model, Msg, page, viewPost)
 
 import Auth
 import Browser
