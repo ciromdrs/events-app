@@ -148,5 +148,27 @@ button:disabled {
 
 
 a.nav-link {
-    margin-right: 1rem;
+    color: black;
+    text-decoration: none;
+    padding:10px;
+
+    padding-top: .75em;
+    padding-bottom: .75em;
+    margin-right: .5em;
+    margin-left: .5em;
+    border-bottom: solid transparent;
+}
+
+a.nav-link:hover {
+    border-bottom: solid;
+}
+
+a.nav-link.current {
+    font-weight: bold;
+}
+
+nav {
+    background-color: white;
+    display: flex;
+    align-items: center;
 }

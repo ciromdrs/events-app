@@ -1,6 +1,7 @@
 module Pages.Home_ exposing (Model, Msg, page, view)
 
 import Auth
+import Gen.Route as Route
 import Html
 import Html.Events as Events
 import Page
@@ -51,7 +52,8 @@ view : Maybe Auth.User -> Model -> View Msg
 view maybeUser _ =
     { title = "Homepage"
     , body =
-        UI.layout maybeUser
+        UI.layout Route.Home_
+            maybeUser
             [ Html.h1 [] [ Html.text "Hello, this is the Events App!" ]
             ]
     }

@@ -2,6 +2,7 @@ module Pages.Profile exposing (Model, Msg, page)
 
 import Auth
 import Gen.Params.SignOut exposing (Params)
+import Gen.Route as Route
 import Html exposing (button, div, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -57,7 +58,8 @@ view : Auth.User -> Model -> View Msg
 view user model =
     { title = "Profile"
     , body =
-        UI.layout (Just user)
+        UI.layout Route.Profile
+            (Just user)
             [ div [] [ span [] [ text user.name ] ]
             , button [ onClick ClickedSignOut ] [ text "Sign out" ]
             ]

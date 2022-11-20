@@ -5,6 +5,7 @@ import Browser
 import File exposing (File)
 import File.Select as Select
 import Gen.Params.Feed exposing (Params)
+import Gen.Route as Route
 import Html exposing (Html, button, div, img, input, main_, span, text, textarea)
 import Html.Attributes exposing (class, id, name, placeholder, rows, src, type_, value)
 import Html.Events exposing (onClick, onInput)
@@ -262,7 +263,8 @@ view : Auth.User -> Model -> View Msg
 view user model =
     { title = "Feed"
     , body =
-        UI.layout (Just user)
+        UI.layout Route.Feed
+            (Just user)
             [ div [] [ span [] [ text model.debugText ] ]
             , main_ []
                 [ viewPostForm model
