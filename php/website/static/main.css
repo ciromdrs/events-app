@@ -6,7 +6,8 @@ body {
 
 
 main {
-    margin: 1em;
+    margin-left: 1em;
+    padding-top: 4em;
 }
 
 
@@ -41,13 +42,12 @@ form :not(div) {
 }
 
 
-div.post, form.post {
+.post {
     max-width: 600px;
     min-width: 250px;
     height: auto;
     padding: 10px;
     margin-bottom:15px;
-    margin-top:15px;
     background-color: white;
 }
 
@@ -175,7 +175,10 @@ a.nav-link.current {
 }
 
 nav {
-    background-color: white;
+    position: fixed;
     display: flex;
     align-items: center;
+    width: 100%;
+
+    background-color: white;
 }
