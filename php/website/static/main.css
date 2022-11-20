@@ -5,6 +5,11 @@ body {
 }
 
 
+main {
+    margin: 1em;
+}
+
+
 form :not(div) {
     margin-top: 5px;
 }
@@ -41,7 +46,8 @@ div.post, form.post {
     min-width: 250px;
     height: auto;
     padding: 10px;
-    margin:15px;
+    margin-bottom:15px;
+    margin-top:15px;
     background-color: white;
 }
 
