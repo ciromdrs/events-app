@@ -13,13 +13,12 @@ import View exposing (View)
 
 page : Shared.Model -> Request -> Page.With Model Msg
 page shared _ =
-    Page.protected.element <|
-        \user ->
-            { init = init
-            , update = update shared.storage
-            , view = view user
-            , subscriptions = \_ -> Sub.none
-            }
+    Page.element
+        { init = init
+        , update = update shared.storage
+        , view = view shared.storage.user
+        , subscriptions = \_ -> Sub.none
+        }
 
 
 
@@ -40,24 +39,19 @@ init =
 
 
 type Msg
-    = ClickedSignOut
+    = None
 
 
 update : Storage -> Msg -> Model -> ( Model, Cmd Msg )
 update storage msg model =
-    case msg of
-        ClickedSignOut ->
-            ( model
-            , Storage.signOut storage
-            )
+    ( model, Cmd.none )
 
 
-view : Auth.User -> Model -> View Msg
-view user _ =
+view : Maybe Auth.User -> Model -> View Msg
+view maybeUser _ =
     { title = "Homepage"
     , body =
-        UI.layout
-            [ Html.h1 [] [ Html.text ("Hello, " ++ user.name ++ "!") ]
-            , Html.button [ Events.onClick ClickedSignOut ] [ Html.text "Sign out" ]
+        UI.layout maybeUser
+            [ Html.h1 [] [ Html.text "Hello, this is the Events App!" ]
             ]
     }

@@ -262,7 +262,7 @@ view : Auth.User -> Model -> View Msg
 view user model =
     { title = "Feed"
     , body =
-        UI.layout
+        UI.layout (Just user)
             [ div [] [ span [] [ text model.debugText ] ]
             , main_ []
                 [ viewPostForm model
