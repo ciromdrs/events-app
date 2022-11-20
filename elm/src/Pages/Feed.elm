@@ -6,9 +6,9 @@ import File exposing (File)
 import File.Select as Select
 import Gen.Params.Feed exposing (Params)
 import Gen.Route as Route
-import Html exposing (Html, button, div, img, input, main_, span, text, textarea)
+import Html exposing (Html, button, div, form, img, input, main_, span, text, textarea)
 import Html.Attributes exposing (class, id, name, placeholder, rows, src, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -265,9 +265,9 @@ view user model =
     , body =
         UI.layout Route.Feed
             (Just user)
-            [ div [] [ span [] [ text model.debugText ] ]
-            , main_ []
-                [ viewPostForm model
+            [ div []
+                [ span [] [ text model.debugText ]
+                , viewPostForm model
                 , div
                     []
                     (case model.status of
@@ -322,11 +322,12 @@ viewPostForm model =
                 Nothing ->
                     ""
     in
-    div [ class "form post" ]
+    form [ class "post", onSubmit ClickedPost ]
         [ div
             []
             [ button [ class "small", onClick PickPhoto ] [ text "Select Photo" ]
             , span [] [ text photo ]
+            , input [ type_ "hidden", Html.Attributes.required True ] []
             ]
         , emptyDiv
         , div []
@@ -341,7 +342,7 @@ viewPostForm model =
             ]
         , emptyDiv
         , button
-            [ onClick ClickedPost ]
+            []
             [ text "Post" ]
         ]
 
