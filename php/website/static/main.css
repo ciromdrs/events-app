@@ -42,6 +42,12 @@ form :not(div) {
 }
 
 
+.post .likes {
+    font-size: small;
+    display: flex;
+    align-items: center;
+}
+
 .post {
     max-width: 600px;
     min-width: 250px;

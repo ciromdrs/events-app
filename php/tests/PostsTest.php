@@ -98,6 +98,7 @@ final class PostsTest extends RESTTestCase {
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(false, $got['liked_by_current_user']);
+        $this->assertEquals(0, $got['like_count']);
 
         // TODO: Test the image content
         $img_url = $got['img_url'];
@@ -142,6 +143,7 @@ final class PostsTest extends RESTTestCase {
         $this->assertEquals('Hello!', $got['text']);
         $this->assertNotEmpty($got['created']);
         $this->assertEquals(true, $got['liked_by_current_user']);
+        $this->assertEquals(1, $got['like_count']);
         return $post_id;
     }
 

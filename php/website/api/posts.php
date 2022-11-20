@@ -28,7 +28,10 @@ print_r($response);
 
 function findAll($connection, $current_user) {
     $qry = "
-        SELECT id, posts.user, text, created, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url, SUM(likes.user = :current_user) as liked_by_current_user
+        SELECT id, posts.user, text, created,
+            CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url,
+            SUM(likes.user = :current_user) as liked_by_current_user,
+            COUNT(likes.user) as like_count
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
         GROUP BY posts.id
@@ -48,7 +51,9 @@ function findAll($connection, $current_user) {
 
 function find($connection, $id, $current_user) {
     $qry = "
-        SELECT posts.*, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url, SUM((likes.user = :current_user)) as liked_by_current_user
+        SELECT posts.*, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url,
+            SUM((likes.user = :current_user)) as liked_by_current_user,
+            COUNT(likes.user) as like_count
         FROM posts LEFT JOIN likes
         ON posts.id = likes.post
         WHERE posts.id=:id

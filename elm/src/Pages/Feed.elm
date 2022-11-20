@@ -73,6 +73,7 @@ type alias Post =
     , text : String
     , created : String
     , likedByCurrentUser : Bool
+    , likeCount : Int
     , imgUrl : String
     }
 
@@ -285,26 +286,37 @@ view user model =
 
 viewPost : Post -> Html Msg
 viewPost post =
+    let
+        likes =
+            if post.likeCount == 1 then
+                "1 like"
+
+            else
+                String.fromInt post.likeCount ++ " likes"
+    in
     div [ class "post" ]
         [ img [ class "post-image", src post.imgUrl ] []
         , span [ class "user" ] [ text post.user ]
         , span [ class "date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]
-        , img
-            [ class
-                (if post.likedByCurrentUser then
-                    "dislike-button"
+        , div [ class "likes" ]
+            [ img
+                [ class
+                    (if post.likedByCurrentUser then
+                        "dislike-button"
 
-                 else
-                    "like-button"
-                )
-            , if post.likedByCurrentUser then
-                onClick (ClickedDislike post)
+                     else
+                        "like-button"
+                    )
+                , if post.likedByCurrentUser then
+                    onClick (ClickedDislike post)
 
-              else
-                onClick (ClickedLike post)
+                  else
+                    onClick (ClickedLike post)
+                ]
+                []
+            , span [] [ text likes ]
             ]
-            []
         ]
 
 
@@ -355,4 +367,5 @@ postDecoder =
         |> required "text" string
         |> required "created" string
         |> required "liked_by_current_user" bool
+        |> required "like_count" int
         |> required "img_url" string

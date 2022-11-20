@@ -17,6 +17,7 @@ testViewPost =
             , text = "some text..."
             , created = "2022-11-04 23:53:22"
             , likedByCurrentUser = False
+            , likeCount = 0
             , imgUrl = "fake/url"
             }
 
@@ -42,6 +43,15 @@ testViewPost =
         , testRenderPostField "dislike button"
             likedPost
             [ tag "img", class "dislike-button" ]
+        , testRenderPostField "0 likes"
+            post
+            [ tag "span", class "likes", text "0 likes" ]
+        , testRenderPostField "1 like"
+            { post | likeCount = 1 }
+            [ tag "span", class "likes", text "1 like" ]
+        , testRenderPostField "2 likes"
+            { post | likeCount = 2 }
+            [ tag "span", class "likes", text "2 likes" ]
         ]
 
 
