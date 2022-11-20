@@ -106,7 +106,7 @@ view model =
                 , Attr.placeholder "Username"
                 ]
                 []
-            , Html.button [ Attr.disabled (String.isEmpty model.name) ]
+            , Html.button [ Attr.class "primary", Attr.disabled (String.isEmpty model.name) ]
                 [ Html.text "Sign in" ]
             ]
         ]

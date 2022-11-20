@@ -61,6 +61,7 @@ view user model =
         UI.layout Route.Profile
             (Just user)
             [ div [] [ span [] [ text user.name ] ]
-            , button [ onClick ClickedSignOut ] [ text "Sign out" ]
+            , button [ class "primary", onClick ClickedSignOut ]
+                [ text "Sign out" ]
             ]
     }

@@ -6,15 +6,16 @@ import File exposing (File)
 import File.Select as Select
 import Gen.Params.Feed exposing (Params)
 import Gen.Route as Route
-import Html exposing (Html, button, div, form, img, input, main_, span, text, textarea)
-import Html.Attributes exposing (class, id, name, placeholder, rows, src, type_, value)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html exposing (Attribute, Html, button, div, form, img, input, main_, span, text, textarea)
+import Html.Attributes as Attr exposing (class, id, placeholder, rows, src, style, type_, value)
+import Html.Events exposing (onClick, onInput, onSubmit, preventDefaultOn)
 import Http
-import Json.Decode exposing (Decoder, bool, int, list, string, succeed)
+import Json.Decode as Decode exposing (Decoder, bool, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Page
 import Request exposing (Request)
 import Shared
+import Task
 import UI
 import Url.Builder exposing (Root(..), custom)
 import View exposing (View)
@@ -37,17 +38,18 @@ page shared _ =
 
 init : Auth.User -> ( Model, Cmd Msg )
 init user =
-    let
-        model =
-            { debugText = ""
-            , status = Loading
-            , posts = []
-            , postFormData = { text = "", photo = Nothing }
-            }
-    in
-    ( model
+    ( { debugText = ""
+      , status = Loading
+      , posts = []
+      , postFormData = emptyFormData
+      }
     , getRecentPostsCmd user
     )
+
+
+emptyFormData : FormData
+emptyFormData =
+    { text = "", photo = Nothing, hover = False, preview = Nothing }
 
 
 
@@ -58,7 +60,15 @@ type alias Model =
     { debugText : String
     , status : Status
     , posts : List Post
-    , postFormData : { text : String, photo : Maybe File }
+    , postFormData : FormData
+    }
+
+
+type alias FormData =
+    { text : String
+    , photo : Maybe File
+    , hover : Bool
+    , preview : Maybe String
     }
 
 
@@ -85,10 +95,14 @@ type alias Post =
 type Msg
     = GotPosts (Result Http.Error (List Post))
     | ClickedPost
+    | ClickedCancel
     | Posted (Result Http.Error String)
     | ChangedPostText String
     | ChangedPostPhoto File
     | PickPhoto
+    | DragEnter
+    | DragLeave
+    | GotPreview String
     | ClickedLike Post
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
@@ -128,9 +142,11 @@ update user msg model =
         ChangedPostPhoto new ->
             let
                 newData =
-                    { formData | photo = Just new }
+                    { formData | hover = False, photo = Just new }
             in
-            ( { model | postFormData = newData }, Cmd.none )
+            ( { model | postFormData = newData }
+            , Task.perform GotPreview <| File.toUrl new
+            )
 
         PickPhoto ->
             ( model
@@ -157,6 +173,11 @@ update user msg model =
                     Cmd.none
             )
 
+        ClickedCancel ->
+            ( { model | postFormData = emptyFormData }
+            , Cmd.none
+            )
+
         Posted result ->
             let
                 modelLoading =
@@ -165,14 +186,7 @@ update user msg model =
                 newModel =
                     case result of
                         Ok value ->
-                            let
-                                oldFormData =
-                                    modelLoading.postFormData
-
-                                clearFields =
-                                    { oldFormData | text = "", photo = Nothing }
-                            in
-                            { modelLoading | postFormData = clearFields }
+                            { modelLoading | postFormData = emptyFormData }
 
                         Err error ->
                             let
@@ -222,6 +236,33 @@ update user msg model =
                 Err err ->
                     ( { model | debugText = httpErrToString err }, Cmd.none )
 
+        DragEnter ->
+            let
+                newData =
+                    { formData | hover = True }
+            in
+            ( { model | postFormData = newData }
+            , Cmd.none
+            )
+
+        DragLeave ->
+            let
+                newData =
+                    { formData | hover = False }
+            in
+            ( { model | postFormData = newData }
+            , Cmd.none
+            )
+
+        GotPreview url ->
+            let
+                newData =
+                    { formData | preview = Just url }
+            in
+            ( { model | postFormData = newData }
+            , Cmd.none
+            )
+
 
 httpErrToString : Http.Error -> String
 httpErrToString err =
@@ -252,7 +293,7 @@ getRecentPostsCmd user =
                 [ "api", "posts" ]
                 [ Url.Builder.string "current_user" user.name ]
                 Nothing
-        , expect = Http.expectJson GotPosts (list postDecoder)
+        , expect = Http.expectJson GotPosts (Decode.list postDecoder)
         }
 
 
@@ -322,26 +363,8 @@ viewPost post =
 
 viewPostForm : Model -> Html Msg
 viewPostForm model =
-    let
-        emptyDiv =
-            div [] []
-
-        photo =
-            case model.postFormData.photo of
-                Just photoFile ->
-                    File.name photoFile
-
-                Nothing ->
-                    ""
-    in
-    form [ class "post", onSubmit ClickedPost ]
-        [ div
-            []
-            [ button [ class "small", onClick PickPhoto ] [ text "Select Photo" ]
-            , span [] [ text photo ]
-            , input [ type_ "hidden", Html.Attributes.required True ] []
-            ]
-        , emptyDiv
+    Html.form [ class "post", onSubmit ClickedPost ]
+        [ viewPhotoInput model.postFormData
         , div []
             [ textarea
                 [ id "text"
@@ -352,11 +375,52 @@ viewPostForm model =
                 ]
                 []
             ]
-        , emptyDiv
         , button
-            []
+            [ class "primary" ]
             [ text "Post" ]
+        , if model.postFormData /= emptyFormData then
+            button [ class "secondary", onClick ClickedCancel ]
+                [ text "Cancel" ]
+
+          else
+            div [] []
         ]
+
+
+viewPhotoInput : FormData -> Html Msg
+viewPhotoInput formData =
+    let
+        photo =
+            case formData.photo of
+                Just photoFile ->
+                    File.name photoFile
+
+                Nothing ->
+                    ""
+    in
+    case formData.preview of
+        Nothing ->
+            div
+                [ class "dragdrop"
+                , Attr.classList [ ( "hover", formData.hover ) ]
+                , onClick PickPhoto
+                , hijackOn "dragenter" (Decode.succeed DragEnter)
+                , hijackOn "dragover" (Decode.succeed DragEnter)
+                , hijackOn "dragleave" (Decode.succeed DragLeave)
+                , hijackOn "drop" dropDecoder
+                ]
+                [ span [] [ text "Drag and drop or click to " ]
+                , button [ class "small primary" ] [ text "Select Photo" ]
+                , span [] [ text photo ]
+                ]
+
+        Just url ->
+            viewPreview url
+
+
+viewPreview : String -> Html msg
+viewPreview url =
+    img [ class "post-image", src url ] []
 
 
 postDecoder : Decoder Post
@@ -369,3 +433,18 @@ postDecoder =
         |> required "liked_by_current_user" bool
         |> required "like_count" int
         |> required "img_url" string
+
+
+dropDecoder : Decoder Msg
+dropDecoder =
+    Decode.at [ "dataTransfer", "files" ] (Decode.oneOrMore (\one more -> ChangedPostPhoto one) File.decoder)
+
+
+hijackOn : String -> Decoder msg -> Attribute msg
+hijackOn event decoder =
+    preventDefaultOn event (Decode.map hijack decoder)
+
+
+hijack : msg -> ( msg, Bool )
+hijack msg =
+    ( msg, True )

@@ -15,6 +15,19 @@ form :not(div) {
     margin-top: 5px;
 }
 
+form div.dragdrop {
+    border: 3px dashed transparent;
+    border-radius: 10px;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+form div.dragdrop.hover {
+     border-color: #ccc;
+}
 
 .post textarea {
     width: 100%;
@@ -63,30 +76,43 @@ button {
     font-weight: bold;
     font-size: 11pt;
     color: black;
-    background-color: #cfcfcf;
-
     border: none;
-    border-radius: 5px;
     padding: 7px;
+}
+
+button.primary {
+    background-color: #cfcfcf;
+    border-radius: 5px;
+}
+
+
+button.primary:hover:enabled {
+    background-color: #d7d7d7;
+}
+
+
+button.primary:disabled {
+    color: grey;
 }
 
 
 button.small {
     text-transform: none;
-    border: none;
-    border-radius: 5px;
     padding: 5px;
 }
 
 
-button:hover:enabled {
-    background-color: #d7d7d7;
+button.secondary {
+    color: #333;
+    background-color: transparent;
 }
 
 
-button:disabled {
-    color: grey;
+button.secondary:hover {
+    color: #555;
+    text-decoration: underline;
 }
+
 
 .post .like-button, .post .dislike-button {
     margin: 5px;
@@ -104,13 +130,13 @@ button:disabled {
 }
 
 
-.shadowed, button, .post, .login-form {
+.shadowed, button.primary, .post, .login-form {
     --light-shadow: rgba(0, 0, 0, .15);
     box-shadow: 0px 6px 10px var(--light-shadow);
 }
 
 
-.shadowed:hover, button:hover:enabled, .post:hover, .login-form:hover {
+.shadowed:hover, button.primary:hover:enabled, .post:hover, .login-form:hover {
     --dark-shadow: rgba(0, 0, 0, .25);
     box-shadow: 0px 6px 10px var(--dark-shadow);
 }
