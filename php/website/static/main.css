@@ -7,7 +7,12 @@ body {
 
 main {
     margin-left: 1em;
-    padding-top: 4em;
+    padding-top: 3em;
+}
+
+div.page-content {
+    position: relative;
+    padding-top: 1em;
 }
 
 
@@ -68,6 +73,10 @@ form div.dragdrop.hover {
     padding: 10px;
     margin-bottom:15px;
     background-color: white;
+}
+
+form.post {
+    width: 100%;
 }
 
 
@@ -226,4 +235,21 @@ nav {
     width: 100%;
 
     background-color: white;
+}
+
+
+div.events-side-pane {
+    position: fixed;
+    left: 0%;
+    height: 100%;
+    padding: 2em;
+    background-color: white;
+}
+
+div.feed {
+    margin-top: 1em;
+    width: 100%;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
 }

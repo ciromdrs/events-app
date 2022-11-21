@@ -307,7 +307,8 @@ view user model =
     , body =
         UI.layout Route.Feed
             (Just user)
-            [ div []
+            [ viewEventsPane model
+            , div [ class "feed" ]
                 [ span [] [ text model.debugText ]
                 , viewPostForm model
                 , div
@@ -421,6 +422,11 @@ viewPhotoInput formData =
 viewPreview : String -> Html msg
 viewPreview url =
     img [ class "post-image", src url ] []
+
+
+viewEventsPane : Model -> Html msg
+viewEventsPane model =
+    div [ class "events-side-pane" ] [ text "Events go here..." ]
 
 
 postDecoder : Decoder Post
