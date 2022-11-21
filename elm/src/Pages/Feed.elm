@@ -41,8 +41,9 @@ init user =
     let
         model =
             { debugText = ""
-            , loadingStatus =
+            , isLoading =
                 { posts = False
+                , events = False
                 }
             , posts = []
             , postFormData = emptyFormData
@@ -62,7 +63,7 @@ emptyFormData =
 
 type alias Model =
     { debugText : String
-    , loadingStatus : LoadingStatus
+    , isLoading : LoadingStatus
     , posts : List Post
     , postFormData : FormData
     }
@@ -78,6 +79,7 @@ type alias FormData =
 
 type alias LoadingStatus =
     { posts : Bool
+    , events : Bool
     }
 
 
@@ -122,13 +124,13 @@ update user msg model =
         GotPosts result ->
             let
                 oldStatus =
-                    model.loadingStatus
+                    model.isLoading
 
                 newStatus =
                     { oldStatus | posts = False }
 
                 newModel =
-                    { model | loadingStatus = newStatus }
+                    { model | isLoading = newStatus }
             in
             case result of
                 Ok posts ->
@@ -298,12 +300,12 @@ getRecentPostsCmd : Auth.User -> Model -> ( Model, Cmd Msg )
 getRecentPostsCmd user model =
     let
         oldStatus =
-            model.loadingStatus
+            model.isLoading
 
         newStatus =
             { oldStatus | posts = True }
     in
-    ( { model | loadingStatus = newStatus }
+    ( { model | isLoading = newStatus }
     , Http.get
         { url =
             custom Relative
@@ -331,7 +333,7 @@ view user model =
                 , viewPostForm model
                 , div
                     []
-                    (if model.loadingStatus.posts then
+                    (if model.isLoading.posts then
                         [ div [] [ text "Loading recent posts..." ] ]
 
                      else
@@ -442,7 +444,14 @@ viewPreview url =
 
 viewEventsPane : Model -> Html msg
 viewEventsPane model =
-    div [ class "events-side-pane" ] [ text "Events go here..." ]
+    div
+        [ class "events-side-pane" ]
+        [ if model.isLoading.events then
+            text "Loading events..."
+
+          else
+            text "Events go here..."
+        ]
 
 
 postDecoder : Decoder Post
