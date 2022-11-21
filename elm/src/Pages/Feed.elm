@@ -38,13 +38,17 @@ page shared _ =
 
 init : Auth.User -> ( Model, Cmd Msg )
 init user =
-    ( { debugText = ""
-      , status = Loading
-      , posts = []
-      , postFormData = emptyFormData
-      }
-    , getRecentPostsCmd user
-    )
+    let
+        model =
+            { debugText = ""
+            , loadingStatus =
+                { posts = False
+                }
+            , posts = []
+            , postFormData = emptyFormData
+            }
+    in
+    getRecentPostsCmd user model
 
 
 emptyFormData : FormData
@@ -58,7 +62,7 @@ emptyFormData =
 
 type alias Model =
     { debugText : String
-    , status : Status
+    , loadingStatus : LoadingStatus
     , posts : List Post
     , postFormData : FormData
     }
@@ -72,9 +76,9 @@ type alias FormData =
     }
 
 
-type Status
-    = Loading
-    | Idle
+type alias LoadingStatus =
+    { posts : Bool
+    }
 
 
 type alias Post =
@@ -117,20 +121,28 @@ update user msg model =
     case msg of
         GotPosts result ->
             let
-                modelIdle =
-                    { model | status = Idle }
+                oldStatus =
+                    model.loadingStatus
+
+                newStatus =
+                    { oldStatus | posts = False }
+
+                newModel =
+                    { model | loadingStatus = newStatus }
             in
             case result of
                 Ok posts ->
-                    ( { modelIdle | posts = posts }, Cmd.none )
+                    ( { newModel | posts = posts }, Cmd.none )
 
                 Err err ->
                     case err of
                         Http.BadBody errMessage ->
-                            ( { modelIdle | debugText = errMessage }, Cmd.none )
+                            ( { newModel | debugText = errMessage }, Cmd.none )
 
                         _ ->
-                            ( { modelIdle | debugText = "Unknown error" }, Cmd.none )
+                            ( { newModel | debugText = "Unknown error" }
+                            , Cmd.none
+                            )
 
         ChangedPostText new ->
             let
@@ -180,13 +192,10 @@ update user msg model =
 
         Posted result ->
             let
-                modelLoading =
-                    { model | status = Loading }
-
                 newModel =
                     case result of
                         Ok value ->
-                            { modelLoading | postFormData = emptyFormData }
+                            { model | postFormData = emptyFormData }
 
                         Err error ->
                             let
@@ -194,9 +203,9 @@ update user msg model =
                                     "An error occurred: "
                                         ++ httpErrToString error
                             in
-                            { modelLoading | debugText = debugText }
+                            { model | debugText = debugText }
             in
-            ( newModel, getRecentPostsCmd user )
+            getRecentPostsCmd user newModel
 
         ClickedLike post ->
             ( model
@@ -231,7 +240,7 @@ update user msg model =
         LikedDisliked result ->
             case result of
                 Ok _ ->
-                    ( model, getRecentPostsCmd user )
+                    getRecentPostsCmd user model
 
                 Err err ->
                     ( { model | debugText = httpErrToString err }, Cmd.none )
@@ -285,9 +294,17 @@ httpErrToString err =
             "Bad Url"
 
 
-getRecentPostsCmd : Auth.User -> Cmd Msg
-getRecentPostsCmd user =
-    Http.get
+getRecentPostsCmd : Auth.User -> Model -> ( Model, Cmd Msg )
+getRecentPostsCmd user model =
+    let
+        oldStatus =
+            model.loadingStatus
+
+        newStatus =
+            { oldStatus | posts = True }
+    in
+    ( { model | loadingStatus = newStatus }
+    , Http.get
         { url =
             custom Relative
                 [ "api", "posts" ]
@@ -295,6 +312,7 @@ getRecentPostsCmd user =
                 Nothing
         , expect = Http.expectJson GotPosts (Decode.list postDecoder)
         }
+    )
 
 
 
@@ -313,13 +331,11 @@ view user model =
                 , viewPostForm model
                 , div
                     []
-                    (case model.status of
-                        Loading ->
-                            [ div [] [ text "Loading recent posts..." ] ]
+                    (if model.loadingStatus.posts then
+                        [ div [] [ text "Loading recent posts..." ] ]
 
-                        _ ->
-                            []
-                                ++ List.map viewPost model.posts
+                     else
+                        List.map viewPost model.posts
                     )
                 ]
             ]
