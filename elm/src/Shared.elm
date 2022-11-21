@@ -29,8 +29,8 @@ init req flags =
             { storage = Storage.fromJson flags }
     in
     ( model
-    , if model.storage.user /= Nothing && req.route == Gen.Route.SignIn then
-        Request.replaceRoute Gen.Route.SignIn req
+    , if model.storage.user /= Nothing && req.route == Gen.Route.Home_ then
+        Request.replaceRoute Gen.Route.Feed req
 
       else
         Cmd.none
@@ -46,8 +46,8 @@ update req msg model =
     case msg of
         StorageUpdated storage ->
             ( { model | storage = storage }
-            , if Gen.Route.SignIn == req.route then
-                Request.pushRoute Gen.Route.Home_ req
+            , if Gen.Route.Home_ == req.route then
+                Request.pushRoute Gen.Route.Feed req
 
               else
                 Cmd.none

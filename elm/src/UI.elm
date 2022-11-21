@@ -17,21 +17,16 @@ layout currentRoute maybeUser children =
                 , Attr.href (Route.toHref route)
                 ]
                 [ Html.text label ]
-
-        privateLinks : List (Html msg)
-        privateLinks =
-            case maybeUser of
-                Nothing ->
-                    [ viewLink "Sign in" Route.SignIn ]
-
-                Just user ->
-                    [ viewLink "Feed" Route.Feed
-                    , viewLink user.name Route.Profile
-                    ]
     in
     [ Html.nav []
-        ([ viewLink "Home" Route.Home_ ]
-            ++ privateLinks
+        (case maybeUser of
+            Nothing ->
+                []
+
+            Just user ->
+                [ viewLink "Feed" Route.Feed
+                , viewLink user.name Route.Profile
+                ]
         )
     , Html.main_ [] children
     ]

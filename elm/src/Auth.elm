@@ -28,4 +28,4 @@ beforeProtectedInit { storage } _ =
             ElmSpa.Provide user
 
         Nothing ->
-            ElmSpa.RedirectTo Gen.Route.SignIn
+            ElmSpa.RedirectTo Gen.Route.Home_
