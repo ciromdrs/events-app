@@ -1,7 +1,7 @@
 module Pages.SignIn exposing (Model, Msg, page)
 
 import Gen.Params.SignIn exposing (Params)
-import Html
+import Html exposing (div, form, main_, text)
 import Html.Attributes as Attr
 import Html.Events as Events
 import Http
@@ -99,15 +99,28 @@ view : Model -> View Msg
 view model =
     { title = "Sign in"
     , body =
-        [ Html.form [ Attr.class "login-form form", Events.onSubmit SubmittedSignInForm ]
-            [ Html.input
-                [ Attr.value model.name
-                , Events.onInput ChangedName
-                , Attr.placeholder "Username"
+        [ div
+            [ Attr.class "login-page"
+            ]
+            [ main_ []
+                [ Html.h1 [] [ Html.text "Welcome to the Events App!" ]
+                , Html.p [] [ text "Sign in to create events, invite participants and share nice photos!" ]
+                , Html.img [ Attr.class "shadowed", Attr.src "/static/sign-in-sample-image.png" ] []
                 ]
-                []
-            , Html.button [ Attr.class "primary", Attr.disabled (String.isEmpty model.name) ]
-                [ Html.text "Sign in" ]
+            , form
+                [ Attr.class "login-form form"
+                , Events.onSubmit SubmittedSignInForm
+                ]
+                [ Html.h2 [] [ text "Sign in" ]
+                , Html.input
+                    [ Attr.value model.name
+                    , Events.onInput ChangedName
+                    , Attr.placeholder "Username"
+                    ]
+                    []
+                , Html.button [ Attr.class "primary", Attr.disabled (String.isEmpty model.name) ]
+                    [ Html.text "Sign in" ]
+                ]
             ]
         ]
     }
