@@ -13,4 +13,8 @@ post('/api/session', '/api/session.php');
 
 get('/api/uploaded_photos/$image', 'api/images.php');
 
+get('/api/events', 'api/events.php');
+get('/api/events/$id', 'api/events.php');
+post('/api/events', 'api/events.php');
+
 any('/404', '404.php');
