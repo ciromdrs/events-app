@@ -76,7 +76,7 @@ final class PostsTest extends RESTTestCase {
      */
     function testLocationHeader($response) {
         $location = $response->getHeader('Location')[0];
-        $regex = '/posts\/(?P<id>\d+)/';
+        $regex = '/posts\/(?P<id>\d+)/'; // TODO: must start with /\/api\/posts
         $this->assertMatchesRegularExpression($regex, $location);
         preg_match($regex, $location, $matches);
         return $matches['id'];
