@@ -7,7 +7,7 @@ import File.Select as Select
 import Gen.Params.Feed exposing (Params)
 import Gen.Route as Route
 import Html exposing (Attribute, Html, button, div, form, img, input, main_, span, text, textarea)
-import Html.Attributes as Attr exposing (class, id, placeholder, rows, src, style, type_, value)
+import Html.Attributes as Attr exposing (class, classList, id, placeholder, rows, src, style, type_, value)
 import Html.Events exposing (onClick, onInput, onSubmit, preventDefaultOn)
 import Http
 import Json.Decode as Decode exposing (Decoder, bool, int, list, string, succeed)
@@ -39,17 +39,30 @@ page shared _ =
 init : Auth.User -> ( Model, Cmd Msg )
 init user =
     let
-        model =
+        emptyModel =
             { debugText = ""
             , isLoading =
                 { posts = False
                 , events = False
                 }
             , posts = []
+            , events = []
+            , selectedEvent = Nothing
             , postFormData = emptyFormData
             }
+
+        ( getPostsModel, postsCmd ) =
+            getRecentPostsCmd user emptyModel
+
+        ( getPostsEventsModel, eventsCmd ) =
+            getEventsCmd user getPostsModel
+
+        model =
+            getPostsEventsModel
     in
-    getRecentPostsCmd user model
+    ( model
+    , Cmd.batch [ postsCmd, eventsCmd ]
+    )
 
 
 emptyFormData : FormData
@@ -65,6 +78,8 @@ type alias Model =
     { debugText : String
     , isLoading : LoadingStatus
     , posts : List Post
+    , events : List Event
+    , selectedEvent : Maybe Event
     , postFormData : FormData
     }
 
@@ -94,6 +109,11 @@ type alias Post =
     }
 
 
+type alias Event =
+    { name : String
+    }
+
+
 
 -- UPDATE
 
@@ -112,6 +132,8 @@ type Msg
     | ClickedLike Post
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
+    | GotEvents (Result Http.Error (List Event))
+    | SelectedEvent (Maybe Event)
 
 
 update : Auth.User -> Msg -> Model -> ( Model, Cmd Msg )
@@ -274,6 +296,36 @@ update user msg model =
             , Cmd.none
             )
 
+        GotEvents result ->
+            let
+                oldStatus =
+                    model.isLoading
+
+                newStatus =
+                    { oldStatus | events = False }
+
+                newModel =
+                    { model | isLoading = newStatus }
+            in
+            case result of
+                Ok events ->
+                    ( { newModel | events = events }, Cmd.none )
+
+                Err err ->
+                    case err of
+                        Http.BadBody errMessage ->
+                            ( { newModel | debugText = errMessage }, Cmd.none )
+
+                        _ ->
+                            ( { newModel | debugText = "Unknown error" }
+                            , Cmd.none
+                            )
+
+        SelectedEvent event ->
+            ( { model | selectedEvent = event }
+            , Cmd.none
+            )
+
 
 httpErrToString : Http.Error -> String
 httpErrToString err =
@@ -313,6 +365,27 @@ getRecentPostsCmd user model =
                 [ Url.Builder.string "current_user" user.name ]
                 Nothing
         , expect = Http.expectJson GotPosts (Decode.list postDecoder)
+        }
+    )
+
+
+getEventsCmd : Auth.User -> Model -> ( Model, Cmd Msg )
+getEventsCmd user model =
+    let
+        oldStatus =
+            model.isLoading
+
+        newStatus =
+            { oldStatus | events = True }
+    in
+    ( { model | isLoading = newStatus }
+    , Http.get
+        { url =
+            custom Relative
+                [ "api", "events" ]
+                [ Url.Builder.string "current_user" user.name ]
+                Nothing
+        , expect = Http.expectJson GotEvents (Decode.list eventDecoder)
         }
     )
 
@@ -442,16 +515,45 @@ viewPreview url =
     img [ class "post-image", src url ] []
 
 
-viewEventsPane : Model -> Html msg
+viewEventsPane : Model -> Html Msg
 viewEventsPane model =
+    let
+        filter : ( String, Bool, Msg ) -> Html Msg
+        filter ( label, current, onClickMsg ) =
+            div
+                [ class "event"
+                , classList [ ( "current", current ) ]
+                , onClick onClickMsg
+                ]
+                [ text label ]
+
+        eventMap : Event -> ( String, Bool, Msg )
+        eventMap event =
+            ( event.name
+            , Just event == model.selectedEvent
+            , SelectedEvent (Just event)
+            )
+    in
     div
         [ class "events-side-pane" ]
-        [ if model.isLoading.events then
-            text "Loading events..."
+        ([ span
+            [ class "title" ]
+            [ text "My Events" ]
+         ]
+            ++ (if model.isLoading.events then
+                    [ text "Loading events..." ]
 
-          else
-            text "Events go here..."
-        ]
+                else
+                    filter
+                        ( "All"
+                        , model.selectedEvent == Nothing
+                        , SelectedEvent Nothing
+                        )
+                        :: List.map
+                            filter
+                            (List.map eventMap model.events)
+               )
+        )
 
 
 postDecoder : Decoder Post
@@ -464,6 +566,12 @@ postDecoder =
         |> required "liked_by_current_user" bool
         |> required "like_count" int
         |> required "img_url" string
+
+
+eventDecoder : Decoder Event
+eventDecoder =
+    succeed Event
+        |> required "name" string
 
 
 dropDecoder : Decoder Msg
