@@ -8,6 +8,19 @@ import Test.Html.Query as Query
 import Test.Html.Selector exposing (class, classes, tag, text)
 
 
+exampleModel : Model
+exampleModel =
+    { debugText = ""
+    , isLoading =
+        { posts = False
+        , events = False
+        }
+    , posts = []
+    , events = []
+    , selectedEvent = Nothing
+    }
+
+
 testViewPost : Test
 testViewPost =
     let
@@ -67,16 +80,7 @@ testEventsPane : Test
 testEventsPane =
     let
         model =
-            { debugText = ""
-            , isLoading =
-                { posts = False
-                , events = False
-                }
-            , posts = []
-            , events = []
-            , selectedEvent = Nothing
-            , postFormData = emptyFormData
-            }
+            exampleModel
 
         loadingEvents =
             { posts = False
@@ -107,7 +111,7 @@ testEventsPane =
                 "All"
             , testCurrentClass
                 "Assigns `current` class to selected event filter"
-                { model | events = [ e1, e2 ], selectedEvent = Just e1 }
+                { model | events = [ e1, e2 ], selectedEvent = Just ( e1, emptyFormData ) }
                 [ tag "div", class "current" ]
                 e1.name
             ]
@@ -129,3 +133,28 @@ testCurrentClass description model criteria name =
                 |> Query.fromHtml
                 |> Query.find criteria
                 |> Query.has [ text name ]
+
+
+testViewFeed : Test
+testViewFeed =
+    let
+        model =
+            exampleModel
+    in
+    describe "Feed"
+        [ testRenderPostForm "Renders PostForm if selected event" model 0
+        , testRenderPostForm "Does not render PostForm if not selected event"
+            { model
+                | selectedEvent = Just ( Event "Test Event", emptyFormData )
+            }
+            1
+        ]
+
+
+testRenderPostForm description model count =
+    test description <|
+        \_ ->
+            viewFeed model
+                |> Query.fromHtml
+                |> Query.findAll [ tag "form", class "post" ]
+                |> Query.count (Expect.equal count)

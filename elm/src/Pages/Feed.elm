@@ -1,4 +1,4 @@
-module Pages.Feed exposing (Event, Model, Msg, emptyFormData, page, viewEventsPane, viewPost)
+module Pages.Feed exposing (Event, Model, Msg, emptyFormData, page, viewEventsPane, viewFeed, viewPost)
 
 import Auth
 import Browser
@@ -48,7 +48,6 @@ init user =
             , posts = []
             , events = []
             , selectedEvent = Nothing
-            , postFormData = emptyFormData
             }
 
         ( getPostsModel, postsCmd ) =
@@ -79,8 +78,7 @@ type alias Model =
     , isLoading : LoadingStatus
     , posts : List Post
     , events : List Event
-    , selectedEvent : Maybe Event
-    , postFormData : FormData
+    , selectedEvent : Maybe ( Event, FormData )
     }
 
 
@@ -133,17 +131,13 @@ type Msg
     | ClickedDislike Post
     | LikedDisliked (Result Http.Error String)
     | GotEvents (Result Http.Error (List Event))
-    | SelectedEvent (Maybe Event)
+    | SelectedEvent (Maybe ( Event, FormData ))
 
 
 update : Auth.User -> Msg -> Model -> ( Model, Cmd Msg )
 update user msg model =
-    let
-        formData =
-            model.postFormData
-    in
-    case msg of
-        GotPosts result ->
+    case ( msg, model.selectedEvent ) of
+        ( GotPosts result, _ ) ->
             let
                 oldStatus =
                     model.isLoading
@@ -168,37 +162,46 @@ update user msg model =
                             , Cmd.none
                             )
 
-        ChangedPostText new ->
+        ( ChangedPostText new, Just ( event, formData ) ) ->
             let
                 newData =
                     { formData | text = new }
             in
-            ( { model | postFormData = newData }, Cmd.none )
+            ( { model | selectedEvent = Just ( event, newData ) }, Cmd.none )
 
-        ChangedPostPhoto new ->
+        ( ChangedPostText _, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( ChangedPostPhoto new, Just ( event, formData ) ) ->
             let
                 newData =
                     { formData | hover = False, photo = Just new }
             in
-            ( { model | postFormData = newData }
+            ( { model | selectedEvent = Just ( event, newData ) }
             , Task.perform GotPreview <| File.toUrl new
             )
 
-        PickPhoto ->
+        ( ChangedPostPhoto _, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( PickPhoto, Just _ ) ->
             ( model
             , Select.file [ "image/*" ] ChangedPostPhoto
             )
 
-        ClickedPost ->
+        ( PickPhoto, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( ClickedPost, Just ( event, formData ) ) ->
             ( model
-            , case model.postFormData.photo of
+            , case formData.photo of
                 Just photo ->
                     Http.post
                         { url = "api/posts"
                         , body =
                             Http.multipartBody
                                 [ Http.stringPart "user" user.name
-                                , Http.stringPart "text" model.postFormData.text
+                                , Http.stringPart "text" formData.text
                                 , Http.filePart "photo" photo
                                 ]
                         , expect = Http.expectString Posted
@@ -209,17 +212,23 @@ update user msg model =
                     Cmd.none
             )
 
-        ClickedCancel ->
-            ( { model | postFormData = emptyFormData }
+        ( ClickedPost, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( ClickedCancel, Just ( event, formData ) ) ->
+            ( { model | selectedEvent = Just ( event, emptyFormData ) }
             , Cmd.none
             )
 
-        Posted result ->
+        ( ClickedCancel, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( Posted result, Just ( event, _ ) ) ->
             let
                 newModel =
                     case result of
                         Ok value ->
-                            { model | postFormData = emptyFormData }
+                            { model | selectedEvent = Just ( event, emptyFormData ) }
 
                         Err error ->
                             let
@@ -231,7 +240,10 @@ update user msg model =
             in
             getRecentPostsCmd user newModel
 
-        ClickedLike post ->
+        ( Posted _, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( ClickedLike post, _ ) ->
             ( model
             , Http.post
                 { url = "api/posts/" ++ String.fromInt post.id ++ "/likes"
@@ -243,7 +255,7 @@ update user msg model =
                 }
             )
 
-        ClickedDislike post ->
+        ( ClickedDislike post, _ ) ->
             ( model
             , Http.request
                 { method = "DELETE"
@@ -261,7 +273,7 @@ update user msg model =
                 }
             )
 
-        LikedDisliked result ->
+        ( LikedDisliked result, _ ) ->
             case result of
                 Ok _ ->
                     getRecentPostsCmd user model
@@ -269,34 +281,43 @@ update user msg model =
                 Err err ->
                     ( { model | debugText = httpErrToString err }, Cmd.none )
 
-        DragEnter ->
+        ( DragEnter, Just ( event, formData ) ) ->
             let
                 newData =
                     { formData | hover = True }
             in
-            ( { model | postFormData = newData }
+            ( { model | selectedEvent = Just ( event, newData ) }
             , Cmd.none
             )
 
-        DragLeave ->
+        ( DragEnter, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( DragLeave, Just ( event, formData ) ) ->
             let
                 newData =
                     { formData | hover = False }
             in
-            ( { model | postFormData = newData }
+            ( { model | selectedEvent = Just ( event, newData ) }
             , Cmd.none
             )
 
-        GotPreview url ->
+        ( DragLeave, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( GotPreview url, Just ( event, formData ) ) ->
             let
                 newData =
                     { formData | preview = Just url }
             in
-            ( { model | postFormData = newData }
+            ( { model | selectedEvent = Just ( event, newData ) }
             , Cmd.none
             )
 
-        GotEvents result ->
+        ( GotPreview _, Nothing ) ->
+            ( model, Cmd.none )
+
+        ( GotEvents result, _ ) ->
             let
                 oldStatus =
                     model.isLoading
@@ -305,7 +326,7 @@ update user msg model =
                     { oldStatus | events = False }
 
                 newModel =
-                    { model | isLoading = newStatus }
+                    { model | isLoading = newStatus, selectedEvent = Nothing }
             in
             case result of
                 Ok events ->
@@ -321,8 +342,8 @@ update user msg model =
                             , Cmd.none
                             )
 
-        SelectedEvent maybeEvent ->
-            ( { model | selectedEvent = maybeEvent }
+        ( SelectedEvent maybeEventFormData, _ ) ->
+            ( { model | selectedEvent = maybeEventFormData }
             , Cmd.none
             )
 
@@ -411,7 +432,12 @@ viewFeed model =
     main_ []
         [ div [ class "feed" ]
             [ span [] [ text model.debugText ]
-            , viewPostForm model
+            , case model.selectedEvent of
+                Just ( event, formData ) ->
+                    viewPostForm formData
+
+                Nothing ->
+                    text ""
             , div
                 []
                 (if model.isLoading.posts then
@@ -460,24 +486,24 @@ viewPost post =
         ]
 
 
-viewPostForm : Model -> Html Msg
-viewPostForm model =
+viewPostForm : FormData -> Html Msg
+viewPostForm formData =
     Html.form [ class "post", onSubmit ClickedPost ]
-        [ viewPhotoInput model.postFormData
+        [ viewPhotoInput formData
         , div []
             [ textarea
                 [ id "text"
                 , rows 3
                 , onInput ChangedPostText
                 , placeholder "Write something..."
-                , value model.postFormData.text
+                , value formData.text
                 ]
                 []
             ]
         , button
             [ class "primary" ]
             [ text "Post" ]
-        , if model.postFormData /= emptyFormData then
+        , if formData /= emptyFormData then
             button [ class "secondary", onClick ClickedCancel ]
                 [ text "Cancel" ]
 
@@ -536,10 +562,18 @@ viewEventsPane model =
 
         eventMap : Event -> ( String, Bool, Msg )
         eventMap event =
-            ( event.name
-            , Just event == model.selectedEvent
-            , SelectedEvent (Just event)
-            )
+            case model.selectedEvent of
+                Just ( selected, formData ) ->
+                    ( event.name
+                    , event == selected
+                    , SelectedEvent (Just ( event, formData ))
+                    )
+
+                Nothing ->
+                    ( event.name
+                    , False
+                    , SelectedEvent (Just ( event, emptyFormData ))
+                    )
     in
     div
         [ class "events-sidebar" ]
