@@ -108,7 +108,8 @@ type alias Post =
 
 
 type alias Event =
-    { name : String
+    { id : Int
+    , name : String
     }
 
 
@@ -203,6 +204,8 @@ update user msg model =
                                 [ Http.stringPart "user" user.name
                                 , Http.stringPart "text" formData.text
                                 , Http.filePart "photo" photo
+                                , Http.stringPart "event"
+                                    (String.fromInt event.id)
                                 ]
                         , expect = Http.expectString Posted
                         }
@@ -343,9 +346,12 @@ update user msg model =
                             )
 
         ( SelectedEvent maybeEventFormData, _ ) ->
-            ( { model | selectedEvent = maybeEventFormData }
-            , Cmd.none
-            )
+            if maybeEventFormData /= model.selectedEvent then
+                getRecentPostsCmd user
+                    { model | selectedEvent = maybeEventFormData }
+
+            else
+                ( model, Cmd.none )
 
 
 httpErrToString : Http.Error -> String
@@ -383,7 +389,15 @@ getRecentPostsCmd user model =
         { url =
             custom Relative
                 [ "api", "posts" ]
-                [ Url.Builder.string "current_user" user.name ]
+                ([ Url.Builder.string "current_user" user.name ]
+                    ++ (case model.selectedEvent of
+                            Nothing ->
+                                []
+
+                            Just ( event, _ ) ->
+                                [ Url.Builder.int "event" event.id ]
+                       )
+                )
                 Nothing
         , expect = Http.expectJson GotPosts (Decode.list postDecoder)
         }
@@ -612,6 +626,7 @@ postDecoder =
 eventDecoder : Decoder Event
 eventDecoder =
     succeed Event
+        |> required "id" int
         |> required "name" string
 
 

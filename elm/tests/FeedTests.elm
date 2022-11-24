@@ -89,11 +89,11 @@ testEventsPane =
 
         e1 : Event
         e1 =
-            { name = "Event 1" }
+            { id = 1, name = "Event 1" }
 
         e2 : Event
         e2 =
-            { name = "Event 2" }
+            { id = 2, name = "Event 2" }
     in
     describe "Events sidebar"
         [ describe "Loading message"
@@ -145,7 +145,8 @@ testViewFeed =
         [ testRenderPostForm "Renders PostForm if selected event" model 0
         , testRenderPostForm "Does not render PostForm if not selected event"
             { model
-                | selectedEvent = Just ( Event "Test Event", emptyFormData )
+                | selectedEvent =
+                    Just ( { id = 1, name = "Test Event" }, emptyFormData )
             }
             1
         ]

@@ -9,6 +9,8 @@ require_once $api_dir."events.php";
 require_once $api_dir.'db.php';
 
 final class PostsTest extends RESTTestCase {
+    static $event;
+
     function __construct() {
         parent::__construct([
             'base_uri' => 'elm-photo-gallery-site-1/api/',
@@ -35,6 +37,7 @@ final class PostsTest extends RESTTestCase {
 
         // Populate database
         Events\insert($dbh, 'owner', 'Test Event');
+        self::$event = $dbh->lastInsertId();
     }
 
 
@@ -44,7 +47,7 @@ final class PostsTest extends RESTTestCase {
         $this->user = 'user1';
         $this->text = 'Hello!';
         $this->photo = 'tests/sample_data/long-horizontal.png';
-        $this->event = Events\findAll(
+        self::$event = Events\findAll(
             $dbh,
             'owner=:owner AND name=:name',
             ['owner' => 'owner', 'name' => 'Test Event']
@@ -74,11 +77,11 @@ final class PostsTest extends RESTTestCase {
     function testPostStatusCreated() {
         $response = $this->client->post(
             'posts',
-            postMultipart($this->user, $this->text, $this->photo, $this->event)
+            postMultipart($this->user, $this->text, $this->photo, self::$event)
         );
         $got = $response->getStatusCode();
         $body = (string) $response->getBody();
-        $this->assertEquals(201, $got, $body);
+        $this->assertEquals(201, $got);
         return $response;
     }
 
@@ -105,12 +108,31 @@ final class PostsTest extends RESTTestCase {
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
-        $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals($this->user, $got['user']);
-        $this->assertEquals('Hello!', $got['text']);
+        $this->testPostData($got, ['id' => $post_id]);
+
+        return $post_id;
+    }
+
+    /**
+     * Auxiliary function to test posts' retrieved data.
+     */
+    private function testPostData($got, $replace_expected) {
+        $expected = [
+            'user' => $this->user,
+            'text' => $this->text,
+            'photo' => $this->photo,
+            'event' => self::$event,
+            'liked_by_current_user' => false,
+            'like_count' => 0,
+        ];
+        $expected = array_replace($expected, $replace_expected);
+
+        $this->assertEquals($expected['id'], $got['id']);
+        $this->assertEquals($expected['user'], $got['user']);
+        $this->assertEquals($expected['text'], $got['text']);
         $this->assertNotEmpty($got['created']);
-        $this->assertEquals(false, $got['liked_by_current_user']);
-        $this->assertEquals(0, $got['like_count']);
+        $this->assertEquals($expected['liked_by_current_user'], $got['liked_by_current_user']);
+        $this->assertEquals($expected['like_count'], $got['like_count']);
 
         // TODO: Test the image content
         $img_url = $got['img_url'];
@@ -120,7 +142,7 @@ final class PostsTest extends RESTTestCase {
         $this->assertNotEquals(404, $response->getStatusCode(), $img_url);
         $this->assertStringNotContainsString('Not Found', $body);
 
-        return $post_id;
+        $this->assertEquals($expected['event'], $got['event']);
     }
 
 
@@ -150,12 +172,14 @@ final class PostsTest extends RESTTestCase {
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
-        $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals($this->user, $got['user']);
-        $this->assertEquals('Hello!', $got['text']);
-        $this->assertNotEmpty($got['created']);
-        $this->assertEquals(true, $got['liked_by_current_user']);
-        $this->assertEquals(1, $got['like_count']);
+        $this->testPostData(
+            $got,
+            [
+                'id' => $post_id,
+                'liked_by_current_user' => true,
+                'like_count' => 1
+            ]
+        );
         return $post_id;
     }
 
@@ -184,16 +208,19 @@ final class PostsTest extends RESTTestCase {
         );
         $body = (string) $response->getBody();
         $got = json_decode($body, $associative = true);
-        $this->assertEquals($post_id, $got['id']);
-        $this->assertEquals($this->user, $got['user']);
-        $this->assertEquals('Hello!', $got['text']);
-        $this->assertNotEmpty($got['created']);
-        $this->assertEquals(false, $got['liked_by_current_user']);
+        $this->testPostData(
+            $got,
+            [
+                'id' => $post_id,
+                'liked_by_current_user' => false,
+                'like_count' => 0
+            ]
+        );
     }
 
 
     function testInsertStatus400MissingUser() {
-        $data = postMultipart('', $this->text, $this->photo, $this->event);
+        $data = postMultipart('', $this->text, $this->photo, self::$event);
         unset($data['multipart'][0]);
         $response = $this->client->post('posts', $data);
         $got = $response->getStatusCode();
@@ -204,7 +231,7 @@ final class PostsTest extends RESTTestCase {
     function testInsertStatus400EmptyUser() {
         $response = $this->client->post(
             'posts',
-            postMultipart('', $this->text, $this->photo, $this->event)
+            postMultipart('', $this->text, $this->photo, self::$event)
         );
         $got = $response->getStatusCode();
         $this->assertEquals(400, $got);
@@ -225,7 +252,7 @@ final class PostsTest extends RESTTestCase {
                     $invalid_user,
                     $this->text,
                     $this->photo,
-                    $this->event
+                    self::$event
                 )
             );
             $got = $response->getStatusCode();
@@ -238,7 +265,7 @@ final class PostsTest extends RESTTestCase {
         $photo = 'tests/sample_data/invalid-file.txt';
         $response = $this->client->post(
             'posts',
-            postMultipart($this->user, $this->text, $photo, $this->event)
+            postMultipart($this->user, $this->text, $photo, self::$event)
         );
         $got = $response->getStatusCode();
         $this->assertEquals(400, $got);

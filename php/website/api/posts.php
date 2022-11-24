@@ -7,67 +7,81 @@ $response = '';
 $dbh = \EventsApp\DB::getInstance();
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        $current_user = $_GET['current_user'];
-        if (isset($id)) {
-            $response = find($dbh, $id, $current_user);
-        } else {
-            $response = findAll($dbh, $current_user);
-        }
-        break;
-
-    case 'POST':
-        [$is_valid, $user, $text, $photo] = validateInput(); // TODO: , $event] = validateInput();
+        [$is_valid, $current_user] = validateGet();
         if (!$is_valid) {
             http_response_code(400);
             return;
         }
-        insert($dbh, $user, $text, $photo); // TODO: , $event);
+
+        $results = null;
+        $params = ['current_user' => $current_user];
+        $where = '';
+        if (isset($id)) {
+            $results = find($dbh, $id, $params);
+        } else {
+            if (isset($_GET['event'])) {
+                $event = $_GET['event'];
+                $where = 'event=:event';
+                $params['event'] = $event;
+            }
+            $results = findAll($dbh, $params, $where);
+        }
+        $response = json_encode($results);
+        break;
+
+    case 'POST':
+        [$is_valid, $user, $text, $photo, $event] = validatePost();
+        if (!$is_valid) {
+            http_response_code(400);
+            return;
+        }
+        insert($dbh, $user, $text, $photo, $event);
         break;
 }
 print_r($response);
 
 
-function findAll($dbh, $current_user) {
+function findAll($dbh, $params = [], $where = '') {
     $qry = "
-        SELECT id, posts.user, text, created,
+        SELECT posts.id, posts.user, text, created,
             CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url,
             SUM(likes.user = :current_user) as liked_by_current_user,
-            COUNT(likes.user) as like_count
+            COUNT(likes.user) as like_count,
+            posts.event
         FROM posts LEFT JOIN likes
-        ON posts.id = likes.post
-        GROUP BY posts.id
+        ON posts.id = likes.post";
+    if (!empty($where)) {
+        $qry .= ' WHERE '.$where;
+    }
+    $qry .= " GROUP BY posts.id
         ORDER BY created DESC
         LIMIT 10;";
+
     $sth = $dbh->prepare($qry);
-    $sth->execute(['current_user' => $current_user]);
+    $sth->execute($params);
     $results = $sth->fetchAll();
+
     foreach ($results as $i => $r) {
         $r = $results[$i];
         $r['liked_by_current_user'] = $r['liked_by_current_user'] > 0;
         $results[$i] = $r;
     }
-    return json_encode($results);
+
+    return $results;
 }
 
 
-function find($dbh, $id, $current_user) {
-    $qry = "
-        SELECT posts.*, CONCAT(\"api/uploaded_photos/\",SHA1(image)) as img_url,
-            SUM((likes.user = :current_user)) as liked_by_current_user,
-            COUNT(likes.user) as like_count
-        FROM posts LEFT JOIN likes
-        ON posts.id = likes.post
-        WHERE posts.id=:id
-        GROUP BY posts.id;";
-    $sth = $dbh->prepare($qry);
-    $sth->execute(['id' => $id, 'current_user' => $current_user]);
-    $data = $sth->fetch($mode=\PDO::FETCH_ASSOC);
-    $data['liked_by_current_user'] = $data['liked_by_current_user'] > 0;
-    return json_encode($data);
+function find($dbh, $id, $params = [], $where = '') {
+    $where_with_id = 'posts.id=:id';
+    $params['id'] = $id;
+    if (!empty($where)) {
+        $where_with_id = $where_with_id.' AND '.$where;
+    }
+    return findAll($dbh, $params, $where_with_id)[0];
 }
 
 
-function insert($dbh, $user, $text, $photo) { // TODO: , $event) {
+function insert($dbh, $user, $text, $photo, $event) {
     $sth = $dbh->prepare('INSERT INTO images () values ();');
     $sth->execute();
     $image = $dbh->lastInsertId();
@@ -75,14 +89,13 @@ function insert($dbh, $user, $text, $photo) { // TODO: , $event) {
 
     move_uploaded_file($photo['tmp_name'], "../uploaded_photos/$filename");
 
-    $qry = 'INSERT INTO posts (user, text, image)
-        VALUES (:user, :text, :image);';  // TODO: , event) VALUES (:user, :text, :image, :event);';
+    $qry = 'INSERT INTO posts (user, text, image, event) VALUES (:user, :text, :image, :event);';
     $sth = $dbh->prepare($qry);
     $sth->execute([
         'user' => $user,
         'text' => $text,
         'image' => $image,
-        // TODO: 'event' => $event
+        'event' => $event
     ]);
     $lastId = $dbh->lastInsertId();
     http_response_code(201);
@@ -90,8 +103,8 @@ function insert($dbh, $user, $text, $photo) { // TODO: , $event) {
 }
 
 
-function validateInput() {
-    $invalid = [False, null, null, null]; // TODO: , null];
+function validatePost() {
+    $invalid = [False, null, null, null, null];
 
     $pairs = [
         ['user', $_POST],
@@ -116,7 +129,19 @@ function validateInput() {
     if(!getimagesize($photo['tmp_name'])){
         return $invalid;
     }
-    // TODO: $event = $_POST['event'];
+    $event = $_POST['event'];
 
-    return [True, $user, $text, $photo]; // TODO: , $event];
+    return [True, $user, $text, $photo, $event];
+}
+
+function validateGet() {
+    $invalid = [False, null];
+
+    $current_user = $_GET['current_user'];
+    if (empty($current_user)) {
+        return $invalid;
+    }
+
+    // The $id comes from the URL, the $event is optional
+    return [True, $current_user];
 }

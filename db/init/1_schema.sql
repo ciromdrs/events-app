@@ -28,9 +28,12 @@ CREATE TABLE `posts` (
   `text` varchar(1000) NOT NULL DEFAULT '',
   `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `image` int unsigned NOT NULL,
+  `event` int unsigned NOT NULL,
+  PRIMARY KEY (`id`),
   KEY `image` (`image`),
+  KEY `event` (`event`),
   CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`image`) REFERENCES `images` (`id`),
-  PRIMARY KEY (`id`)
+  CONSTRAINT `posts_ibfk_2` FOREIGN KEY (`event`) REFERENCES `events` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
