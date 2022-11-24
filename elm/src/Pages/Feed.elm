@@ -1,4 +1,4 @@
-module Pages.Feed exposing (Model, Msg, page, viewPost)
+module Pages.Feed exposing (Event, Model, Msg, emptyFormData, page, viewEventsPane, viewPost)
 
 import Auth
 import Browser
@@ -321,8 +321,8 @@ update user msg model =
                             , Cmd.none
                             )
 
-        SelectedEvent event ->
-            ( { model | selectedEvent = event }
+        SelectedEvent maybeEvent ->
+            ( { model | selectedEvent = maybeEvent }
             , Cmd.none
             )
 
@@ -401,20 +401,27 @@ view user model =
         UI.layout Route.Feed
             (Just user)
             [ viewEventsPane model
-            , div [ class "feed" ]
-                [ span [] [ text model.debugText ]
-                , viewPostForm model
-                , div
-                    []
-                    (if model.isLoading.posts then
-                        [ div [] [ text "Loading recent posts..." ] ]
-
-                     else
-                        List.map viewPost model.posts
-                    )
-                ]
+            , viewFeed model
             ]
     }
+
+
+viewFeed : Model -> Html Msg
+viewFeed model =
+    main_ []
+        [ div [ class "feed" ]
+            [ span [] [ text model.debugText ]
+            , viewPostForm model
+            , div
+                []
+                (if model.isLoading.posts then
+                    [ div [] [ text "Loading recent posts..." ] ]
+
+                 else
+                    List.map viewPost model.posts
+                )
+            ]
+        ]
 
 
 viewPost : Post -> Html Msg
@@ -535,7 +542,7 @@ viewEventsPane model =
             )
     in
     div
-        [ class "events-side-pane" ]
+        [ class "events-sidebar" ]
         ([ span
             [ class "title" ]
             [ text "My Events" ]

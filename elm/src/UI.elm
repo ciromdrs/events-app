@@ -18,7 +18,7 @@ layout currentRoute maybeUser children =
                 ]
                 [ Html.text label ]
     in
-    [ Html.nav []
+    Html.nav []
         (case maybeUser of
             Nothing ->
                 []
@@ -28,8 +28,7 @@ layout currentRoute maybeUser children =
                 , viewLink user.name Route.Profile
                 ]
         )
-    , Html.main_ [] children
-    ]
+        :: [ Html.div [ Attr.class "page-content" ] children ]
 
 
 h1 : String -> Html msg

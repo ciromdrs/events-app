@@ -2,10 +2,10 @@ module FeedTests exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
-import Pages.Feed exposing (Msg, viewPost)
+import Pages.Feed exposing (..)
 import Test exposing (..)
 import Test.Html.Query as Query
-import Test.Html.Selector exposing (class, tag, text)
+import Test.Html.Selector exposing (class, classes, tag, text)
 
 
 testViewPost : Test
@@ -61,3 +61,71 @@ testRenderPostField description post contents =
             viewPost post
                 |> Query.fromHtml
                 |> Query.has contents
+
+
+testEventsPane : Test
+testEventsPane =
+    let
+        model =
+            { debugText = ""
+            , isLoading =
+                { posts = False
+                , events = False
+                }
+            , posts = []
+            , events = []
+            , selectedEvent = Nothing
+            , postFormData = emptyFormData
+            }
+
+        loadingEvents =
+            { posts = False
+            , events = True
+            }
+
+        e1 : Event
+        e1 =
+            { name = "Event 1" }
+
+        e2 : Event
+        e2 =
+            { name = "Event 2" }
+    in
+    describe "Events sidebar"
+        [ describe "Loading message"
+            [ testLoadingMessage "Renders loading message"
+                { model | isLoading = loadingEvents }
+                (Query.has [ text "Loading events..." ])
+            , testLoadingMessage "Does not render loading message"
+                model
+                (Query.hasNot [ text "Loading events..." ])
+            ]
+        , describe "`current` class"
+            [ testCurrentClass "Assigns `current` class to `All`"
+                { model | events = [ e1, e2 ], selectedEvent = Nothing }
+                [ tag "div", class "current" ]
+                "All"
+            , testCurrentClass
+                "Assigns `current` class to selected event filter"
+                { model | events = [ e1, e2 ], selectedEvent = Just e1 }
+                [ tag "div", class "current" ]
+                e1.name
+            ]
+        ]
+
+
+testLoadingMessage description model query =
+    test description <|
+        \_ ->
+            viewEventsPane model
+                |> Query.fromHtml
+                |> query
+
+
+testCurrentClass description model criteria name =
+    test description <|
+        \_ ->
+            viewEventsPane model
+                |> Query.fromHtml
+                |> Query.find criteria
+                |> Query.has [ text name ]
