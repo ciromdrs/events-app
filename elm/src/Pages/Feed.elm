@@ -596,7 +596,7 @@ viewEventsPane model =
             [ text "My Events" ]
          ]
             ++ (if model.isLoading.events then
-                    [ text "Loading events..." ]
+                    [ span [] [ text "Loading events..." ] ]
 
                 else
                     filter
