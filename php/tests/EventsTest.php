@@ -1,7 +1,10 @@
 <?php
 use GuzzleHttp\Psr7;
 
+$api_dir = dirname(dirname(__FILE__))."/html/api/";
+
 require_once("RESTTestCase.php");
+require_once $api_dir.'db.php';
 
 final class EventsTest extends RESTTestCase {
     function __construct() {
@@ -12,17 +15,21 @@ final class EventsTest extends RESTTestCase {
         ]);
     }
 
-
-    static function setUpBeforeClass(): void {
-        // Clear database
-        $dbh = new PDO(
-            'mysql:host=elm-photo-gallery-db-1;dbname=eventsapp',
-            'root',
-            'example'
-        );
-        $qry = 'DELETE FROM events;';
+    private static function clearDatabase() {
+        $dbh = \EventsApp\DB::getInstance();
+        $qry = 'DELETE FROM likes; DELETE FROM posts;
+            DELETE FROM images; DELETE FROM events;';
         $sth = $dbh->prepare($qry);
         $sth->execute();
+        $sth->closeCursor();
+    }
+
+    static function setUpBeforeClass(): void {
+        self::clearDatabase();
+    }
+
+    static function tearDownAfterClass(): void {
+        self::clearDatabase();
     }
 
 

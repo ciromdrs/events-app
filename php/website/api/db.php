@@ -1,5 +1,7 @@
 <?php
+namespace EventsApp;
 
+use \PDO;
 
 class DB {
 	protected static $instance;
@@ -15,15 +17,15 @@ class DB {
             );
 
 			try {
-				self::$instance = new PDO(
+				self::$instance = new \PDO(
                     'mysql:host=elm-photo-gallery-db-1;dbname=eventsapp',
                     'root',
                     'example'
                 );
 				self::$instance->setAttribute(
-                    PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC
+                    \PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC
                 );
-			} catch(PDOException $error) {
+			} catch(\PDOException $error) {
 				echo $error->getMessage();
 			}
 		}

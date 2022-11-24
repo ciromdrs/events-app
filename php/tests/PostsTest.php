@@ -1,7 +1,12 @@
 <?php
 use GuzzleHttp\Psr7;
+use EventsApp\Events;
 
-require_once("RESTTestCase.php");
+$api_dir = dirname(dirname(__FILE__))."/html/api/";
+
+require_once "RESTTestCase.php";
+require_once $api_dir."events.php";
+require_once $api_dir.'db.php';
 
 final class PostsTest extends RESTTestCase {
     function __construct() {
@@ -14,14 +19,11 @@ final class PostsTest extends RESTTestCase {
 
     static function setUpBeforeClass(): void {
         // Clear database
-        $dbh = new PDO(
-            'mysql:host=elm-photo-gallery-db-1;dbname=eventsapp',
-            'root',
-            'example'
-        );
+        $dbh = \EventsApp\DB::getInstance();
         $qry = 'DELETE FROM likes; DELETE FROM posts; DELETE FROM images;';
         $sth = $dbh->prepare($qry);
         $sth->execute();
+        $sth->closeCursor();
 
         // Clear uploaded photos directory
         $files = glob('uploaded_photos/*');
@@ -30,13 +32,23 @@ final class PostsTest extends RESTTestCase {
                 unlink($file); // delete file
             }
         }
+
+        // Populate database
+        Events\insert($dbh, 'owner', 'Test Event');
     }
 
 
     function setUp(): void {
+        $dbh = \EventsApp\DB::getInstance();
+
         $this->user = 'user1';
         $this->text = 'Hello!';
         $this->photo = 'tests/sample_data/long-horizontal.png';
+        $this->event = Events\findAll(
+            $dbh,
+            'owner=:owner AND name=:name',
+            ['owner' => 'owner', 'name' => 'Test Event']
+        )[0]['id'];
     }
 
 
@@ -62,7 +74,7 @@ final class PostsTest extends RESTTestCase {
     function testPostStatusCreated() {
         $response = $this->client->post(
             'posts',
-            postMultipart($this->user, $this->text, $this->photo)
+            postMultipart($this->user, $this->text, $this->photo, $this->event)
         );
         $got = $response->getStatusCode();
         $body = (string) $response->getBody();
@@ -181,7 +193,7 @@ final class PostsTest extends RESTTestCase {
 
 
     function testInsertStatus400MissingUser() {
-        $data = postMultipart('', $this->text, $this->photo);
+        $data = postMultipart('', $this->text, $this->photo, $this->event);
         unset($data['multipart'][0]);
         $response = $this->client->post('posts', $data);
         $got = $response->getStatusCode();
@@ -192,7 +204,7 @@ final class PostsTest extends RESTTestCase {
     function testInsertStatus400EmptyUser() {
         $response = $this->client->post(
             'posts',
-            postMultipart('', $this->text, $this->photo)
+            postMultipart('', $this->text, $this->photo, $this->event)
         );
         $got = $response->getStatusCode();
         $this->assertEquals(400, $got);
@@ -209,7 +221,12 @@ final class PostsTest extends RESTTestCase {
         foreach ($invalid_user_provider as $i => $invalid_user) {
             $response = $this->client->post(
                 'posts',
-                postMultipart($invalid_user, $this->text, $this->photo)
+                postMultipart(
+                    $invalid_user,
+                    $this->text,
+                    $this->photo,
+                    $this->event
+                )
             );
             $got = $response->getStatusCode();
             $this->assertEquals(400, $got);
@@ -221,7 +238,7 @@ final class PostsTest extends RESTTestCase {
         $photo = 'tests/sample_data/invalid-file.txt';
         $response = $this->client->post(
             'posts',
-            postMultipart($this->user, $this->text, $photo)
+            postMultipart($this->user, $this->text, $photo, $this->event)
         );
         $got = $response->getStatusCode();
         $this->assertEquals(400, $got);
@@ -229,7 +246,7 @@ final class PostsTest extends RESTTestCase {
 }
 
 
-function postMultipart($user, $text, $photo) {
+function postMultipart($user, $text, $photo, $event) {
     return [
         'multipart' => [
             [
@@ -243,6 +260,10 @@ function postMultipart($user, $text, $photo) {
             [
                 'name'     => 'photo',
                 'contents' => Psr7\Utils::tryFopen($photo, 'r'),
+            ],
+            [
+                'name'     => 'event',
+                'contents' => $event
             ],
         ]
     ];

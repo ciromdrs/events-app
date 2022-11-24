@@ -1,4 +1,5 @@
 <?php
+namespace EventsApp;
 
 require_once('db.php');
 
@@ -8,7 +9,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case "POST":
         $user = $_POST["user"];
         $qry = 'INSERT INTO likes (user, post) VALUES (:user, :post);';
-        $dbh = DB::getInstance();
+        $dbh = \EventsApp\DB::getInstance();
         $sth = $dbh->prepare($qry);
         $sth->execute(['user' => $user, 'post' => $post]);
         http_response_code(201);
@@ -19,7 +20,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         parse_str($_SERVER['QUERY_STRING'], $vars);
         $user = $vars["user"];
         $qry = "DELETE FROM likes WHERE user=:user AND post=:post;";
-        $dbh = DB::getInstance();
+        $dbh = \EventsApp\DB::getInstance();
         $sth = $dbh->prepare($qry);
         $sth->execute(['user' => $user, 'post' => $post]);
         http_response_code(200);

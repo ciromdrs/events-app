@@ -1,23 +1,26 @@
 <?php
+namespace EventsApp\Events;
 
-require_once('db.php');
+require_once 'db.php';
+
 
 $response = '';
+$dbh = \EventsApp\DB::getInstance();
+/* TODO: Move logic to separate class to avoid raising warnings when requiring
+   this script due to accessing, for example, $_SERVER['REQUEST_METHOD']. */
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'GET':
-        $dbh = DB::getInstance();
         [$is_valid, $current_user] = validateGet();
         if (!$is_valid) {
             http_response_code(400);
             return;
         }
         $results = null;
-        $params = []; // TODO: pass in ['current_user' => $current_user];
+        // TODO: pass in $current_user
         if (isset($id)) {
-            $params['id'] = $id;
-            $results = find($dbh, $params, 'id=:id');
+            $results = find($dbh, $id);
         } else {
-            $results = findAll($dbh, $params);
+            $results = findAll($dbh);
         }
         $response = json_encode($results);
         break;
@@ -28,38 +31,42 @@ switch ($_SERVER['REQUEST_METHOD']) {
             http_response_code(400);
             return;
         }
-        insert($owner, $name);
+        $last_id = insert($dbh, $owner, $name);
+        http_response_code(201);
+        header("Location: /api/events/$last_id");
         break;
 }
 echo $response;
 
 
-function find($connection, $data, $where = null) {
-    return findAll($connection, $data, $where)[0];
+function find($dbh, $id, $where = null, $params = null) {
+    $where_with_id = 'id=:id';
+    $params['id'] = $id;
+    if (!empty($where)) {
+        $where_with_id = $where_with_id.' AND '.$where;
+    }
+    return findAll($dbh, $where_with_id, $params)[0];
 }
 
 
-function findAll($connection, $data, $where = null) {
+function findAll($dbh, $where = null, $params = null) {
     $qry = "SELECT * FROM events";
     if (!empty($where)) {
         $qry .= ' WHERE '.$where;
     }
     $qry .= ';';
-    $sth = $connection->prepare($qry);
-    $sth->execute($data);
+    $sth = $dbh->prepare($qry);
+    $sth->execute($params);
     $results = $sth->fetchAll();
     return $results;
 }
 
 
-function insert($owner, $name) {
-    $dbh = DB::getInstance();
+function insert($dbh, $owner, $name) {
     $qry = 'INSERT INTO events (owner, name) VALUES (:owner, :name);';
     $sth = $dbh->prepare($qry);
     $sth->execute(['owner' => $owner, 'name' => $name]);
-    $lastId = $dbh->lastInsertId();
-    http_response_code(201);
-    header("Location: /api/events/$lastId");
+    return $lastId = $dbh->lastInsertId();
 }
 
 
