@@ -72,16 +72,11 @@ form div.dragdrop.hover {
 }
 
 .post {
-    max-width: 600px;
-    min-width: 250px;
+    width: 600px;
     height: auto;
     padding: 10px;
     margin-bottom:15px;
     background-color: white;
-}
-
-form.post {
-    width: 100%;
 }
 
 
