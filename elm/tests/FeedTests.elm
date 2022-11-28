@@ -149,8 +149,8 @@ testViewFeed =
             emptyModel
     in
     describe "Feed"
-        [ testRenderPostForm "Renders PostForm if selected event" model 0
-        , testRenderPostForm "Does not render PostForm if not selected event"
+        [ testRenderPostForm "Does not render PostForm if not selected event" model 0
+        , testRenderPostForm "Renders PostForm if selected event"
             { model
                 | selectedEvent =
                     Just ( { id = 1, name = "Test Event" }, emptyFormData )
