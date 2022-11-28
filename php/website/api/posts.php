@@ -87,7 +87,7 @@ function insert($dbh, $user, $text, $photo, $event) {
     $image = $dbh->lastInsertId();
     $filename = sha1($image);
 
-    move_uploaded_file($photo['tmp_name'], "../uploaded_photos/$filename");
+    move_uploaded_file($photo, "../uploaded_photos/$filename");
 
     $qry = 'INSERT INTO posts (user, text, image, event) VALUES (:user, :text, :image, :event);';
     $sth = $dbh->prepare($qry);
@@ -123,10 +123,10 @@ function validatePost() {
 
     $user = $_POST['user'];
     $text = $_POST['text'];
-    $photo = $_FILES['photo'];
+    $photo = $_FILES['photo']['tmp_name'];
     // TODO: Use FileInfo to check if the image is valid
     // https://www.php.net/manual/en/book.fileinfo.php
-    if(!getimagesize($photo['tmp_name'])){
+    if(!getimagesize($photo)){
         return $invalid;
     }
     $event = $_POST['event'];
