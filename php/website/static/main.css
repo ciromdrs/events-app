@@ -251,7 +251,6 @@ div.events-sidebar {
 
     display: flex;
     flex-direction: column;
-
 }
 
 div.events-sidebar > * {
@@ -262,12 +261,12 @@ div.events-sidebar > * {
     padding-left: var(--default-padding-left);
 }
 
-div.events-sidebar > .event {
-    border-right: var(--border) transparent;
+div.events-sidebar .event {
+    border-left: var(--border) transparent;
 }
 
-div.events-sidebar > .event:hover {
-    border-right: var(--border) black;
+div.events-sidebar .event:hover {
+    border-left: var(--border) black;
 }
 
 div.events-sidebar > .title {
@@ -294,4 +293,9 @@ form#new-event input {
 
 form#new-event button {
     width: 2rem;
+}
+
+
+.y-scrollable {
+    overflow-y: scroll;
 }

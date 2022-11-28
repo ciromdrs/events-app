@@ -108,6 +108,9 @@ testEventsPane =
         , eventsPaneTestCase "Renders new event form"
             model
             (Query.has [ tag "form", id "new-event" ])
+        , eventsPaneTestCase "Event list is y-scrollable"
+            model
+            (Query.has [ tag "div", id "new-event" ])
         ]
 
 
@@ -134,6 +137,7 @@ testCurrentClass description model criteria name =
         \_ ->
             viewEventsPane model
                 |> Query.fromHtml
+                |> Query.find [ id "events" ]
                 |> Query.find criteria
                 |> Query.has [ text name ]
 

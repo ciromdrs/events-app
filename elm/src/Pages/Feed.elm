@@ -741,19 +741,21 @@ viewEventsPane model =
             [ class "title" ]
             [ text "My Events" ]
             :: viewEventForm model
-            :: (if model.isLoading.events then
-                    [ span [] [ text "Loading events..." ] ]
+            :: [ div [ id "events", class "y-scrollable" ]
+                    (if model.isLoading.events then
+                        [ span [] [ text "Loading events..." ] ]
 
-                else
-                    filter
-                        ( "All"
-                        , model.selectedEvent == Nothing
-                        , SelectedEvent Nothing
-                        )
-                        :: List.map
-                            filter
-                            (List.map eventMap model.events)
-               )
+                     else
+                        filter
+                            ( "All"
+                            , model.selectedEvent == Nothing
+                            , SelectedEvent Nothing
+                            )
+                            :: List.map
+                                filter
+                                (List.map eventMap model.events)
+                    )
+               ]
         )
 
 
