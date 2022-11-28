@@ -94,7 +94,7 @@ testEventsPane =
         , describe "`current` class"
             [ testCurrentClass "Assigns `current` class to `All`"
                 { model | events = [ e1, e2 ], selectedEvent = Nothing }
-                [ tag "div", class "current" ]
+                [ class "current" ]
                 "All"
             , testCurrentClass
                 "Assigns `current` class to selected event filter"
@@ -102,7 +102,7 @@ testEventsPane =
                     | events = [ e1, e2 ]
                     , selectedEvent = Just ( e1, emptyFormData )
                 }
-                [ tag "div", class "current" ]
+                [ class "current" ]
                 e1.name
             ]
         , eventsPaneTestCase "Renders new event form"
