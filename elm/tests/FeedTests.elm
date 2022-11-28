@@ -5,20 +5,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Pages.Feed exposing (..)
 import Test exposing (..)
 import Test.Html.Query as Query
-import Test.Html.Selector exposing (class, classes, tag, text)
-
-
-exampleModel : Model
-exampleModel =
-    { debugText = ""
-    , isLoading =
-        { posts = False
-        , events = False
-        }
-    , posts = []
-    , events = []
-    , selectedEvent = Nothing
-    }
+import Test.Html.Selector exposing (class, classes, id, tag, text)
 
 
 testViewPost : Test
@@ -80,7 +67,7 @@ testEventsPane : Test
 testEventsPane =
     let
         model =
-            exampleModel
+            emptyModel
 
         loadingEvents =
             { posts = False
@@ -111,14 +98,29 @@ testEventsPane =
                 "All"
             , testCurrentClass
                 "Assigns `current` class to selected event filter"
-                { model | events = [ e1, e2 ], selectedEvent = Just ( e1, emptyFormData ) }
+                { model
+                    | events = [ e1, e2 ]
+                    , selectedEvent = Just ( e1, emptyFormData )
+                }
                 [ tag "div", class "current" ]
                 e1.name
             ]
+        , eventsPaneTestCase "Renders new event form"
+            model
+            (Query.has [ tag "form", id "new-event" ])
         ]
 
 
+eventsPaneTestCase description model query =
+    test description <|
+        \_ ->
+            viewEventsPane model
+                |> Query.fromHtml
+                |> query
+
+
 testLoadingMessage description model query =
+    -- TODO: Delete this and use eventsPaneTestCase instead
     test description <|
         \_ ->
             viewEventsPane model
@@ -127,6 +129,7 @@ testLoadingMessage description model query =
 
 
 testCurrentClass description model criteria name =
+    -- TODO: Refactor this to use eventsPaneTestCase
     test description <|
         \_ ->
             viewEventsPane model
@@ -139,7 +142,7 @@ testViewFeed : Test
 testViewFeed =
     let
         model =
-            exampleModel
+            emptyModel
     in
     describe "Feed"
         [ testRenderPostForm "Renders PostForm if selected event" model 0

@@ -1,7 +1,8 @@
-module Pages.Feed exposing (Event, Model, Msg, emptyFormData, page, viewEventsPane, viewFeed, viewPost)
+module Pages.Feed exposing (Event, Model, Msg, emptyFormData, emptyModel, page, viewEventsPane, viewFeed, viewPost)
 
 import Auth
 import Browser
+import Dict exposing (Dict)
 import File exposing (File)
 import File.Select as Select
 import Gen.Params.Feed exposing (Params)
@@ -13,6 +14,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder, bool, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Page
+import Regex exposing (Regex)
 import Request exposing (Request)
 import Shared
 import Task
@@ -39,17 +41,6 @@ page shared _ =
 init : Auth.User -> ( Model, Cmd Msg )
 init user =
     let
-        emptyModel =
-            { debugText = ""
-            , isLoading =
-                { posts = False
-                , events = False
-                }
-            , posts = []
-            , events = []
-            , selectedEvent = Nothing
-            }
-
         ( getPostsModel, postsCmd ) =
             getRecentPostsCmd user emptyModel
 
@@ -77,8 +68,25 @@ type alias Model =
     { debugText : String
     , isLoading : LoadingStatus
     , posts : List Post
-    , events : List Event
-    , selectedEvent : Maybe ( Event, FormData )
+    , events : List Event -- TODO: Use a Set Event instead
+    , selectedEvent : Maybe ( Event, FormData ) -- TODO: Change to maybeEventFormData
+    , eventNameInput : String
+    , justCreatedEventId : Maybe Int
+    }
+
+
+emptyModel : Model
+emptyModel =
+    { debugText = ""
+    , isLoading =
+        { posts = False
+        , events = False
+        }
+    , posts = []
+    , events = []
+    , selectedEvent = Nothing
+    , eventNameInput = ""
+    , justCreatedEventId = Nothing
     }
 
 
@@ -133,6 +141,9 @@ type Msg
     | LikedDisliked (Result Http.Error String)
     | GotEvents (Result Http.Error (List Event))
     | SelectedEvent (Maybe ( Event, FormData ))
+    | ChangedEventName String
+    | ClickedNewEvent
+    | CreatedEvent (Result Http.Error String)
 
 
 update : Auth.User -> Msg -> Model -> ( Model, Cmd Msg )
@@ -328,22 +339,63 @@ update user msg model =
                 newStatus =
                     { oldStatus | events = False }
 
-                newModel =
-                    { model | isLoading = newStatus, selectedEvent = Nothing }
+                modelNotLoading =
+                    { model | isLoading = newStatus }
             in
             case result of
                 Ok events ->
-                    ( { newModel | events = events }, Cmd.none )
+                    let
+                        modelWithEventsClearJustCreated =
+                            { modelNotLoading
+                                | events = events
+                                , justCreatedEventId = Nothing
+                            }
+
+                        previousEvent =
+                            {- Check whether the previous selected event is
+                               still in the list of events.
+                            -}
+                            case model.selectedEvent of
+                                Just ( event, formData ) ->
+                                    case selectEvent event.id events of
+                                        Just selected ->
+                                            Just ( selected, formData )
+
+                                        Nothing ->
+                                            Nothing
+
+                                Nothing ->
+                                    Nothing
+                    in
+                    case ( modelNotLoading.justCreatedEventId, modelNotLoading.selectedEvent ) of
+                        ( Just id, _ ) ->
+                            case selectEvent id events of
+                                Just event ->
+                                    getRecentPostsCmd user
+                                        { modelWithEventsClearJustCreated
+                                            | selectedEvent = Just ( event, emptyFormData )
+                                        }
+
+                                Nothing ->
+                                    {- Should not happen in practice, but even
+                                       so, try to restore previously selected
+                                       event.
+                                    -}
+                                    getRecentPostsCmd user
+                                        { modelWithEventsClearJustCreated
+                                            | selectedEvent = previousEvent
+                                        }
+
+                        ( Nothing, _ ) ->
+                            getRecentPostsCmd user
+                                { modelWithEventsClearJustCreated
+                                    | selectedEvent = previousEvent
+                                }
 
                 Err err ->
-                    case err of
-                        Http.BadBody errMessage ->
-                            ( { newModel | debugText = errMessage }, Cmd.none )
-
-                        _ ->
-                            ( { newModel | debugText = "Unknown error" }
-                            , Cmd.none
-                            )
+                    ( { modelNotLoading | debugText = httpErrToString err }
+                    , Cmd.none
+                    )
 
         ( SelectedEvent maybeEventFormData, _ ) ->
             if maybeEventFormData /= model.selectedEvent then
@@ -352,6 +404,100 @@ update user msg model =
 
             else
                 ( model, Cmd.none )
+
+        ( ChangedEventName new, _ ) ->
+            ( { model | eventNameInput = new }, Cmd.none )
+
+        ( ClickedNewEvent, _ ) ->
+            ( model
+            , Http.post
+                { url = "api/events"
+                , body =
+                    Http.multipartBody
+                        [ Http.stringPart "name" model.eventNameInput
+                        , Http.stringPart "owner" user.name
+                        ]
+                , expect = expectLocation CreatedEvent
+                }
+            )
+
+        ( CreatedEvent result, _ ) ->
+            case result of
+                Ok location ->
+                    let
+                        newModel =
+                            { model | eventNameInput = "" }
+                    in
+                    case idFromLocation location of
+                        Just id ->
+                            getEventsCmd user
+                                { newModel | justCreatedEventId = Just id }
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Err error ->
+                    ( { model
+                        | debugText =
+                            "Event creation error: "
+                                ++ httpErrToString error
+                      }
+                    , Cmd.none
+                    )
+
+
+expectLocation : (Result Http.Error String -> Msg) -> Http.Expect Msg
+expectLocation toMsg =
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadUrl_ url ->
+                    Err (Http.BadUrl url)
+
+                Http.Timeout_ ->
+                    Err Http.Timeout
+
+                Http.NetworkError_ ->
+                    Err Http.NetworkError
+
+                Http.BadStatus_ metadata body ->
+                    Err (Http.BadStatus metadata.statusCode)
+
+                Http.GoodStatus_ metadata body ->
+                    case Dict.get "location" metadata.headers of
+                        Nothing ->
+                            Err (Http.BadBody "Missing location header")
+
+                        Just url ->
+                            Ok url
+
+
+idFromLocation : String -> Maybe Int
+idFromLocation location =
+    let
+        regex =
+            Maybe.withDefault Regex.never <|
+                Regex.fromString "\\d+$"
+
+        matches =
+            Regex.findAtMost 1 regex location
+    in
+    case matches of
+        id :: [] ->
+            String.toInt id.match
+
+        _ ->
+            Nothing
+
+
+selectEvent : Int -> List Event -> Maybe Event
+selectEvent id events =
+    case List.partition (\event -> event.id == id) events of
+        ( event :: [], _ ) ->
+            Just event
+
+        ( _, _ ) ->
+            Nothing
 
 
 httpErrToString : Http.Error -> String
@@ -591,11 +737,11 @@ viewEventsPane model =
     in
     div
         [ class "events-sidebar" ]
-        ([ span
+        (span
             [ class "title" ]
             [ text "My Events" ]
-         ]
-            ++ (if model.isLoading.events then
+            :: viewEventForm model
+            :: (if model.isLoading.events then
                     [ span [] [ text "Loading events..." ] ]
 
                 else
@@ -609,6 +755,19 @@ viewEventsPane model =
                             (List.map eventMap model.events)
                )
         )
+
+
+viewEventForm : Model -> Html Msg
+viewEventForm model =
+    form [ id "new-event", onSubmit ClickedNewEvent ]
+        [ input
+            [ placeholder "New event"
+            , onInput ChangedEventName
+            , value model.eventNameInput
+            ]
+            []
+        , button [ class "primary" ] [ text "+" ]
+        ]
 
 
 postDecoder : Decoder Post
