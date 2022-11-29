@@ -253,7 +253,7 @@ div.events-sidebar {
     flex-direction: column;
 }
 
-div.events-sidebar > * {
+div.events-sidebar :not(div.y-scrollable, form#new-event *) {
     position:relative;
     padding-top: .5rem;
     padding-bottom: .5rem;
