@@ -39,6 +39,10 @@ form div.dragdrop.hover {
      border-color: #ccc;
 }
 
+form.post button {
+    float: right;
+}
+
 .post textarea {
     width: 100%;
     width: -moz-available;          /* For Mozilla */
