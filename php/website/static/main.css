@@ -285,6 +285,10 @@ div.feed {
     align-items: center;
 }
 
+div.feed > * {
+    margin-bottom: 15px;
+}
+
 
 form#new-event {
     display: flex;
