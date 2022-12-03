@@ -18,7 +18,7 @@ class DB {
 
 			try {
 				self::$instance = new \PDO(
-                    'mysql:host=elm-photo-gallery-db-1;dbname=eventsapp',
+                    'mysql:host=events-app-db-1;dbname=eventsapp',
                     'root',
                     'example'
                 );

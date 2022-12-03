@@ -10,7 +10,7 @@ final class EventsTest extends RESTTestCase {
     function __construct() {
         // TODO: Copied from PostsTest. Move from both to parent class.
         parent::__construct([
-            'base_uri' => 'elm-photo-gallery-site-1/api/',
+            'base_uri' => 'events-app-site-1/api/',
             'http_errors' => false
         ]);
     }

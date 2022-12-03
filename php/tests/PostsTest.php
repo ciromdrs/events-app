@@ -13,7 +13,7 @@ final class PostsTest extends RESTTestCase {
 
     function __construct() {
         parent::__construct([
-            'base_uri' => 'elm-photo-gallery-site-1/api/',
+            'base_uri' => 'events-app-site-1/api/',
             'http_errors' => false
         ]);
     }
