@@ -25,5 +25,10 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $sth->execute(['user' => $user, 'post' => $post]);
         http_response_code(200);
         break;
+
+    case "OPTIONS":
+        http_response_code(204);
+        header('Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE');
+        break;
 }
 print_r($response);

@@ -209,7 +209,11 @@ update user msg model =
             , case formData.photo of
                 Just photo ->
                     Http.post
-                        { url = "api/posts"
+                        { url =
+                            Url.Builder.crossOrigin
+                                "http://localhost:80"
+                                [ "api", "posts" ]
+                                []
                         , body =
                             Http.multipartBody
                                 [ Http.stringPart "user" user.name
@@ -260,11 +264,10 @@ update user msg model =
         ( ClickedLike post, _ ) ->
             ( model
             , Http.post
-                { url = "api/posts/" ++ String.fromInt post.id ++ "/likes"
+                { url = "http://localhost:80/api/posts/" ++ String.fromInt post.id ++ "/likes"
                 , body =
                     Http.multipartBody
-                        [ Http.stringPart "user" user.name
-                        ]
+                        [ Http.stringPart "user" user.name ]
                 , expect = Http.expectString LikedDisliked
                 }
             )
@@ -275,12 +278,12 @@ update user msg model =
                 { method = "DELETE"
                 , headers = []
                 , url =
-                    custom Relative
+                    Url.Builder.crossOrigin
+                        "http://localhost:80"
                         [ "api", "posts", String.fromInt post.id, "likes" ]
-                        [ Url.Builder.string "user" user.name
-                        ]
-                        Nothing
-                , body = Http.emptyBody
+                        [ Url.Builder.string "user" user.name ]
+                , body =
+                    Http.emptyBody
                 , expect = Http.expectString LikedDisliked
                 , timeout = Nothing
                 , tracker = Nothing
@@ -411,7 +414,11 @@ update user msg model =
         ( ClickedNewEvent, _ ) ->
             ( model
             , Http.post
-                { url = "api/events"
+                { url =
+                    Url.Builder.crossOrigin
+                        "http://localhost:80"
+                        [ "api", "events" ]
+                        []
                 , body =
                     Http.multipartBody
                         [ Http.stringPart "name" model.eventNameInput
@@ -434,16 +441,11 @@ update user msg model =
                                 { newModel | justCreatedEventId = Just id }
 
                         Nothing ->
-                            ( model, Cmd.none )
+                            getEventsCmd user newModel
 
                 Err error ->
-                    ( { model
-                        | debugText =
-                            "Event creation error: "
-                                ++ httpErrToString error
-                      }
-                    , Cmd.none
-                    )
+                    -- TODO: Treat errors
+                    getEventsCmd user newModel
 
 
 expectLocation : (Result Http.Error String -> Msg) -> Http.Expect Msg
@@ -464,12 +466,24 @@ expectLocation toMsg =
                     Err (Http.BadStatus metadata.statusCode)
 
                 Http.GoodStatus_ metadata body ->
-                    case Dict.get "location" metadata.headers of
+                    case Dict.get "Location" metadata.headers of
                         Nothing ->
-                            Err (Http.BadBody "Missing location header")
+                            Err
+                                (Http.BadBody
+                                    ("Missing location header. Headers: "
+                                        ++ dictToString metadata.headers
+                                    )
+                                )
 
                         Just url ->
                             Ok url
+
+
+dictToString dict =
+    Dict.foldl
+        (\k v str -> k ++ "=" ++ v ++ ", " ++ str)
+        ""
+        dict
 
 
 idFromLocation : String -> Maybe Int
@@ -509,8 +523,8 @@ httpErrToString err =
         Http.NetworkError ->
             "Network Error"
 
-        Http.BadBody _ ->
-            "BadBody"
+        Http.BadBody body ->
+            "BadBody " ++ body
 
         Http.BadStatus code ->
             "Bad Status ("
@@ -533,10 +547,11 @@ getRecentPostsCmd user model =
     ( { model | isLoading = newStatus }
     , Http.get
         { url =
-            custom Relative
+            Url.Builder.crossOrigin
+                "http://localhost:80"
                 [ "api", "posts" ]
-                ([ Url.Builder.string "current_user" user.name ]
-                    ++ (case model.selectedEvent of
+                (Url.Builder.string "current_user" user.name
+                    :: (case model.selectedEvent of
                             Nothing ->
                                 []
 
@@ -544,7 +559,6 @@ getRecentPostsCmd user model =
                                 [ Url.Builder.int "event" event.id ]
                        )
                 )
-                Nothing
         , expect = Http.expectJson GotPosts (Decode.list postDecoder)
         }
     )
@@ -562,10 +576,10 @@ getEventsCmd user model =
     ( { model | isLoading = newStatus }
     , Http.get
         { url =
-            custom Relative
+            Url.Builder.crossOrigin
+                "http://localhost:80"
                 [ "api", "events" ]
                 [ Url.Builder.string "current_user" user.name ]
-                Nothing
         , expect = Http.expectJson GotEvents (Decode.list eventDecoder)
         }
     )
@@ -621,7 +635,7 @@ viewPost post =
                 String.fromInt post.likeCount ++ " likes"
     in
     div [ class "post" ]
-        [ img [ class "post-image", src post.imgUrl ] []
+        [ img [ class "post-image", src ("http://localhost:80/" ++ post.imgUrl) ] []
         , span [ class "user" ] [ text post.user ]
         , span [ class "date" ] [ text (" on " ++ post.created) ]
         , div [ class "post-text" ] [ text post.text ]

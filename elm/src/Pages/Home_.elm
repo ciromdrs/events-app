@@ -61,7 +61,7 @@ update storage msg model =
         SubmittedSignInForm ->
             ( model
             , Http.post
-                { url = "/api/session"
+                { url = "http://localhost:80/api/session"
                 , body =
                     Http.multipartBody
                         [ Http.stringPart "username" model.name ]
@@ -105,7 +105,7 @@ view model =
             [ main_ []
                 [ Html.h1 [] [ Html.text "Welcome to the Events App!" ]
                 , Html.p [] [ text "Sign in to create events, invite participants and share nice photos!" ]
-                , Html.img [ Attr.class "shadowed", Attr.src "/static/sign-in-sample-image.png" ] []
+                , Html.img [ Attr.class "shadowed", Attr.src "static/sign-in-sample-image.png" ] []
                 ]
             , form
                 [ Attr.class "login-form form"

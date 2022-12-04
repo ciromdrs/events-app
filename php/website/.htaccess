@@ -3,3 +3,5 @@ RewriteEngine On
 RewriteRule ^api/.*$ routes.php [QSA,L]
 
 FallbackResource /static/index.html
+
+Header set Access-Control-Allow-Origin "*"
