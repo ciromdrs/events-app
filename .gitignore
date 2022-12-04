@@ -1,17 +1,22 @@
-### PHPUnit ###
-# Covers PHPUnit
-# Reference: https://phpunit.de/
-
-# Generated files
+### Laravel ###
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
 .phpunit.result.cache
-.phpunit.cache
-
-# PHPUnit
-/app/phpunit.xml
-/phpunit.xml
-
-# Build data
-/build/
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+/.fleet
+/.idea
+/.vscode
 
 
 ### Elm ###
