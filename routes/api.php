@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\PostController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,6 @@ Route::resource('events', EventController::class)
     ->only(['index', 'store'])
     ;//->middleware(['auth', 'verified']);
 
-Route::get('/posts', function () {
-    return '[{"id":0, "text":"test post", "img_url":"none", "like_count":0, "liked_by_current_user":false, "created":"dez 4 10:39", "user":"default"}]';
-});
+Route::resource('posts', PostController::class)
+    ->only(['index', 'store'])
+    ;//->middleware(['auth', 'verified']);

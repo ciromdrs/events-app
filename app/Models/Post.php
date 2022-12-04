@@ -5,17 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Event extends Model
+class Post extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'owner',
-        'name',
+        'user',
+        'text',
+        'event_id',
     ];
-
-    public function posts()
-    {
-        return $this->hasMany(Post::class);
-    }
 }
