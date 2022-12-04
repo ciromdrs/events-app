@@ -14,16 +14,22 @@ class PostController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $posts = DB::table('posts')
+        if ($request->has('event')) {
+            $event = $request->input('event');
+        }
+        $qry = DB::table('posts')
             ->select(
                 '*',
                 DB::raw('"NO-IMAGE" as img_url'),
                 DB::raw('false as liked_by_current_user'),
-                DB::raw('0 as like_count'))
-            ->groupBy('posts.id')
-            ->get();
+                DB::raw('0 as like_count'));
+        if (isset($event)) {
+            $qry->where('event_id','=',$event);
+        }
+        $qry->groupBy('posts.id');
+        $posts = $qry->get();
         $posts->map(function ($post) {
             $post->liked_by_current_user = $post->liked_by_current_user > 0;
             return $post;
