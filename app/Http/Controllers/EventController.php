@@ -14,7 +14,8 @@ class EventController extends Controller
      */
     public function index()
     {
-        //
+        $events = Event::all();
+        return $events->toJson();
     }
 
     /**
@@ -35,7 +36,12 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'owner' => 'required|string|max:144',
+            'name' => 'required|string|max:144',
+        ]);
+
+        Event::create($validated);
     }
 
     /**
