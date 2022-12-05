@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\ImageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,3 +32,6 @@ Route::resource('events', EventController::class)
 Route::resource('posts', PostController::class)
     ->only(['index', 'store'])
     ;//->middleware(['auth', 'verified']);
+
+
+Route::get('uploaded_photos/{filename}', [ImageController::class, 'serve']);//->middleware(['auth', 'verified']);

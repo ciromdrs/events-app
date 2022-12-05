@@ -13,5 +13,6 @@ class Post extends Model
         'user',
         'text',
         'event_id',
+        'photo',
     ];
 }

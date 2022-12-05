@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
 
 
 class PostController extends Controller
@@ -22,13 +24,14 @@ class PostController extends Controller
         $qry = DB::table('posts')
             ->select(
                 '*',
-                DB::raw('"NO-IMAGE" as img_url'),
+                DB::raw('CONCAT("api/", posts.photo) as img_url'),
                 DB::raw('false as liked_by_current_user'),
                 DB::raw('0 as like_count'));
         if (isset($event)) {
             $qry->where('event_id','=',$event);
         }
-        $qry->groupBy('posts.id');
+        $qry->groupBy('posts.id')
+            ->latest();
         $posts = $qry->get();
         $posts->map(function ($post) {
             $post->liked_by_current_user = $post->liked_by_current_user > 0;
@@ -61,7 +64,12 @@ class PostController extends Controller
             'user' => 'required|string|max:144',
             'text' => 'required|string|max:256',
             'event_id' => 'required|int',
+            'photo' => 'required|max:10000|image|mimes:jpg,png,jpeg',
         ]);
+
+        $photo = $validated['photo'];
+        $saved_photo = Storage::putFile('uploaded_photos', $photo);
+        $validated['photo'] = $saved_photo;
 
         Post::create($validated);
     }
